@@ -1,0 +1,33 @@
+c:\users\alexe_000\documents\visual studio 2013\Projects\Nevis14\Nevis14\bin\Debug\Nevis14.exe.config
+C:\Users\alexe_000\Documents\Visual Studio 2013\Projects\Nevis14\Nevis14\obj\Debug\Nevis14.csprojResolveAssemblyReference.cache
+C:\Users\alexe_000\Documents\Visual Studio 2013\Projects\Nevis14\Nevis14\obj\Debug\Nevis14.Form1.resources
+C:\Users\alexe_000\Documents\Visual Studio 2013\Projects\Nevis14\Nevis14\obj\Debug\Nevis14.Properties.Resources.resources
+C:\Users\alexe_000\Documents\Visual Studio 2013\Projects\Nevis14\Nevis14\obj\Debug\Nevis14.csproj.GenerateResource.Cache
+C:\Users\alexe_000\Documents\Visual Studio 2013\Projects\Nevis14\Nevis14\bin\Debug\Nevis14.exe
+C:\Users\alexe_000\Documents\Visual Studio 2013\Projects\Nevis14\Nevis14\bin\Debug\Nevis14.pdb
+C:\Users\alexe_000\Documents\Visual Studio 2013\Projects\Nevis14\Nevis14\obj\Debug\Nevis14.exe
+C:\Users\alexe_000\Documents\Visual Studio 2013\Projects\Nevis14\Nevis14\obj\Debug\Nevis14.pdb
+C:\Users\alexe_000\Documents\Visual Studio 2013\Projects\Nevis14\Nevis14\obj\Debug\Nevis14.ChipControl.resources
+C:\Users\Max Beck\Documents\Physics\Chip Testing\Nevis14\Nevis14\bin\Debug\Nevis14.exe.config
+C:\Users\Max Beck\Documents\Physics\Chip Testing\Nevis14\Nevis14\obj\Debug\Nevis14.exe
+C:\Users\Max Beck\Documents\Physics\Chip Testing\Nevis14\Nevis14\obj\Debug\Nevis14.pdb
+C:\Users\Max Beck\Documents\Physics\Chip Testing\Nevis14\Nevis14\bin\Debug\Nevis14.exe
+C:\Users\Max Beck\Documents\Physics\Chip Testing\Nevis14\Nevis14\bin\Debug\Nevis14.pdb
+C:\Users\Max Beck\Documents\Physics\Chip Testing\Nevis14\Nevis14\obj\Debug\Nevis14.csprojResolveAssemblyReference.cache
+C:\Users\Max Beck\Documents\Physics\Chip Testing\Nevis14\Nevis14\obj\Debug\Nevis14.ChipControl.resources
+C:\Users\Max Beck\Documents\Physics\Chip Testing\Nevis14\Nevis14\obj\Debug\Nevis14.Form1.resources
+C:\Users\Max Beck\Documents\Physics\Chip Testing\Nevis14\Nevis14\obj\Debug\Nevis14.Properties.Resources.resources
+C:\Users\Max Beck\Documents\Physics\Chip Testing\Nevis14\Nevis14\obj\Debug\Nevis14.csproj.GenerateResource.Cache
+C:\Users\alexe_000\Documents\Nevis14\Nevis14\Nevis14\bin\Debug\Nevis14.exe.config
+C:\Users\alexe_000\Documents\Nevis14\Nevis14\Nevis14\obj\Debug\Nevis14.exe
+C:\Users\alexe_000\Documents\Nevis14\Nevis14\Nevis14\obj\Debug\Nevis14.pdb
+C:\Users\alexe_000\Documents\Nevis14\Nevis14\Nevis14\bin\Debug\Nevis14.exe
+C:\Users\alexe_000\Documents\Nevis14\Nevis14\Nevis14\bin\Debug\Nevis14.pdb
+C:\Users\alexe_000\Documents\Nevis14\Nevis14\Nevis14\obj\Debug\Nevis14.csprojResolveAssemblyReference.cache
+C:\Users\alexe_000\Documents\Nevis14\Nevis14\Nevis14\obj\Debug\Nevis14.ChipControl.resources
+C:\Users\alexe_000\Documents\Nevis14\Nevis14\Nevis14\obj\Debug\Nevis14.Form1.resources
+C:\Users\alexe_000\Documents\Nevis14\Nevis14\Nevis14\obj\Debug\Nevis14.Properties.Resources.resources
+C:\Users\alexe_000\Documents\Nevis14\Nevis14\Nevis14\obj\Debug\Nevis14.csproj.GenerateResource.Cache
+C:\Users\alexe_000\Documents\Nevis14\Nevis14\bin\Debug\Nevis14.exe.config
+C:\Users\alexe_000\Documents\Nevis14\Nevis14\obj\Debug\Nevis14.exe
+C:\Users\alexe_000\Documents\Nevis14\Nevis14\obj\Debug\Nevis14.pdb
