@@ -94,6 +94,8 @@ namespace Nevis14 {
             for (uint i = 0; i < 4; i++) SendCalibControl(i);
         } // End InitializeConnection
 
+        //TODO: Add diagnostic
+
         /// <summary>
         /// Manage the calibration calculation
         /// Returns true if successful, false otherwise
@@ -512,7 +514,12 @@ namespace Nevis14 {
                         + Environment.NewLine + "MDAC[3] corr0: " + corr[5] + "\t corr1: " + corr[4]
                         + Environment.NewLine + "MDAC[2] corr0: " + corr[3] + "\t corr1: " + corr[2]
                         + Environment.NewLine + "MDAC[1] corr0: " + corr[1] + "\t corr1: " + corr[0]);
-                return true;
+               
+                // Check the dynamic range of the channel, if more than calBound% of the counts
+                // are lost then the chip is defective
+                double chipRange = corr[0] + corr[2] + corr[4] + corr[6] + 128;
+                Console.WriteLine("Dynamic range of chip is: " + chipRange);
+                return ((1 - chipRange / 4096) < calBound);
             }
         }   // End CheckCalibration
 
@@ -548,7 +555,7 @@ namespace Nevis14 {
                 for (int j = 0; j < 8; j += 2) {
                     s += ((data[i + j] << 8) + data[i + j + 1]) + " ";
                 }
-                s += "\r\n";
+                s += Environment.NewLine;
             }
 
             dataBox.Update(() => dataBox.AppendText(s));

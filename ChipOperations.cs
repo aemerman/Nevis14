@@ -11,7 +11,7 @@ namespace Nevis14 {
         private void ReceivedData (string port, List<byte> data) {
             if (port == "A") {
                 bufferA.AddRange(data);
-                WriteDataToGui(data);
+                //WriteDataToGui(data); // different port A outputs are parsed differently
             } else if (port == "B") {
                 WriteCommandToGui("B RD", data);
             } else throw new Exception("invalid port: " + port);
@@ -29,7 +29,7 @@ namespace Nevis14 {
                  ((adcFilter & 1) << 6) |
                  ((pllReset & 1) << 7)),
                 (byte) (fifoACounter & 255),
-                (byte) ((fifoACounter >> 8) & 31),
+                (byte) ((fifoACounter >> 8) & 255),
                 (byte)
                 (((startControlOperation & 1) << 0) |
                 ((pulseCommand & 1) << 1) |
