@@ -94,7 +94,21 @@ namespace Nevis14 {
             for (uint i = 0; i < 4; i++) SendCalibControl(i);
         } // End InitializeConnection
 
-        //TODO: Add diagnostic
+        // Simple diagnostic to check that the chip can send and receive signals
+        public bool SerializerTest () {
+            for (uint iCh = 0; iCh < 4; iCh++) {
+                chipControl1.adcs[iCh].serializer = 1;
+                SendCalibControl(iCh);
+            }
+            GetAdcData(1);
+            if (bufferA.Count != 8) throw new Exception("Not enough data for serializer test.");
+            for (int i = 0; i < bufferA.Count; i+=2) {
+                Console.WriteLine(bufferA[i] + " " + bufferA[i + 1] + " ");
+                if (bufferA[i] != ((1 << 7) + (7 << 1))) return false; // byte should be 8'b10001110
+                if (bufferA[i + 1] != (15 << 4)) return false; // byte should be 8'b11110000
+            }
+            return true;
+        }
 
         /// <summary>
         /// Manage the calibration calculation
