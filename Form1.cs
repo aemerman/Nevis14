@@ -46,7 +46,7 @@ namespace Nevis14 {
             NoStop = 0
         };
 
-        const int samplesForCalib = 1000;
+        const int samplesForCalib = 3000;
         int samplesUsedForCalib = samplesForCalib - 20;
 
         // Variables used to keep track of the data being output
@@ -543,8 +543,8 @@ namespace Nevis14 {
         /// </summary>
         /// <returns></returns>
         public bool TakeData () {
-            GetAdcData(6200);
-            if (bufferA.Count != 6200 * 8) { Console.WriteLine(bufferA.Count); return false; }
+            GetAdcData(12400);
+            if (bufferA.Count != 12400 * 8) { Console.WriteLine(bufferA.Count); return false; }
 
             WriteDataToGui(bufferA);
             string s = "";
