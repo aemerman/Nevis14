@@ -28,7 +28,7 @@ namespace Nevis14 {
         } // End struct AdcData
 
         public AdcData[] FFT3 (double freq, string[] chipdata) {
-            const int sampLength = 6144; //Number of data points used
+            const int sampLength = 12288; //Number of data points used
             double[] result = new double[4];    // For populating our signal histogram
 
             double sampFreq;     //Sampling Frequency
@@ -195,7 +195,7 @@ namespace Nevis14 {
                 //----Find the Second Largest Value----// 
                 bin1 = fourierHisto[0];         // bin1 has the largest value, however
                 fourierHisto[0] = 0;            // that isn't actually part of our data.
-                fourierHisto[3072] = 0;
+                fourierHisto[sampLength/2] = 0;
                 Console.Write(String.Format("DC Component {0} = {1}\n", isig, bin1));
                 binMax = fourierHisto.Max();        // The max value, our signal, is actually
                 fourierHisto[0] = bin1;             // the second largest value, now in binMax.
