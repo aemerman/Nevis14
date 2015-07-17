@@ -558,6 +558,60 @@ namespace Nevis14 {
             return true;
         } // End TakeData
 
+        public void SeeTest () {
+            adcFilter = 1; SendStatus();
+            SendPllResetCommand();
+            for (uint iCh = 0; iCh < 4; iCh++) {
+                chipControl1.SafeInvoke(() => {
+                    chipControl1.adcs[iCh].oFlag = 0;
+                    chipControl1.adcs[iCh].serializer = 1;
+                });
+                SendCalibControl(iCh);
+            }
+            SendStartMeasurementCommand();
+            //ftdi.WaitForData('B', ReceivedData);
+
+            for (uint iCh = 0; iCh < 4; iCh++) {
+                chipControl1.SafeInvoke(() => {
+                    chipControl1.adcs[iCh].oFlag = 1;
+                    chipControl1.adcs[iCh].serializer = 0;
+                });
+                SendCalibControl(iCh);
+            }
+            SendStartMeasurementCommand();
+            //ftdi.WaitForData('B', ReceivedData);
+            SendPllResetCommand();
+
+            GetAdcData(1000);
+            List<string> lines = ParseSee(bufferA);
+            File.AppendAllText(filePath + "seeData.txt", DateTime.Now + Environment.NewLine);
+            File.AppendAllLines(filePath + "seeData.txt", lines);
+
+            GetPllData(10);
+            lines = ParseSee(bufferA);
+            File.AppendAllText(filePath + "pllData.txt", DateTime.Now + Environment.NewLine);
+            File.AppendAllLines(filePath + "pllData.txt", lines);
+            
+            return;
+        } // End SeeTest
+
+        private List<string> ParseSee(List<byte> data) {
+            if ((data.Count % 8) != 0) throw new Exception("SEE data size is not a multiple of 8.");
+            List<string> lines = new List<string>();
+            string s;
+
+            for (int i = 0; i < data.Count; i += 8) {
+                s = "";
+                for (int j = 0; j < 8; j++) {
+                    // Show the binary numbers
+                    s += Convert.ToString(data[i + j], 2).PadLeft(8, '0') + " ";
+                }
+                s += Environment.NewLine;
+                lines.Add(s);
+            }
+            return lines;
+        } // End ParseSee
+
         // Parses data and it to the data box (right side of GUI)
         private void WriteDataToGui (List<byte> data) {
             // ADC data should be output in multiples of 8
