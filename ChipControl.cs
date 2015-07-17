@@ -65,7 +65,7 @@ namespace Nevis14 {
             this.Update(() => this.adcButton.BackColor = 
                 success ? System.Drawing.Color.Green : System.Drawing.Color.Red);
         } // End IsCalibrated
-
+         
         // The Update method for AdcControl contains a check
         // against isActive. If isActive is false it will not
         // carry out the action. This prevents the AdcControl
