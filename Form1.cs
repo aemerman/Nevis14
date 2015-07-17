@@ -559,7 +559,7 @@ namespace Nevis14 {
         } // End TakeData
 
         public void SeeTest () {
-            adcFilter = 1; SendStatus();
+            adcFilter = 0; SendStatus();
             SendPllResetCommand();
             for (uint iCh = 0; iCh < 4; iCh++) {
                 chipControl1.SafeInvoke(() => {
@@ -568,8 +568,7 @@ namespace Nevis14 {
                 });
                 SendCalibControl(iCh);
             }
-            SendStartMeasurementCommand();
-            //ftdi.WaitForData('B', ReceivedData);
+            GetAdcData(1000);
 
             for (uint iCh = 0; iCh < 4; iCh++) {
                 chipControl1.SafeInvoke(() => {
@@ -578,8 +577,11 @@ namespace Nevis14 {
                 });
                 SendCalibControl(iCh);
             }
+            adcFilter = 1; SendStatus(); // ?
             SendStartMeasurementCommand();
             //ftdi.WaitForData('B', ReceivedData);
+            // wait for data on A
+
             SendPllResetCommand();
 
             GetAdcData(1000);

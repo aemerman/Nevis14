@@ -75,13 +75,13 @@ namespace Nevis14 {
             }
         } // end Open
 
-        public void WriteToChip (string portName, List<byte> data) {
+        public void WriteToChip (char portName, List<byte> data) {
             if (!isOpen) throw new Exception("Ftdi not initialized");
 
             uint bytesWritten = 0;
             uint bytesWaiting = 1;
 
-            if (portName == "A") {
+            if (portName == 'A') {
                 var dataReverse = new List<byte>();
                 dataReverse.InsertRange(0, data);
                 dataReverse.Reverse();
@@ -117,10 +117,10 @@ namespace Nevis14 {
             if (data.Count != bytesWritten) throw new Exception("Write length mismatch");
         } // end WriteToChip
 
-        public void ReadFromChip (string portname, ReadFunctionType call) {
-            if (portname != "A" && portname != "B") throw new Exception("Invalid port name "
+        public void ReadFromChip (char portname, ReadFunctionType call) {
+            if (portname != 'A' && portname != 'B') throw new Exception("Invalid port name "
                 + portname + ". Should be A or B.");
-            FTDI rdPort = (portname == "B") ? portB : portA;
+            FTDI rdPort = (portname == 'B') ? portB : portA;
             if (rdPort == null) throw new Exception("No port " + portname + " exists");
             if (!rdPort.IsOpen) throw new Exception("Port " + portname + " is closed");
 

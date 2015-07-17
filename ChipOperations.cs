@@ -3,16 +3,16 @@ using System.Collections.Generic;
 
 namespace Nevis14 {
     // This file contains functions to send commands to the chip
-    public delegate void ReadFunctionType (string port, List<byte> data);
+    public delegate void ReadFunctionType (char port, List<byte> data);
 
     public partial class Form1 : System.Windows.Forms.Form {
 
         // Determine what to do with data based on the port in came in on
-        private void ReceivedData (string port, List<byte> data) {
-            if (port == "A") {
+        private void ReceivedData (char port, List<byte> data) {
+            if (port == 'A') {
                 bufferA.AddRange(data);
                 //WriteDataToGui(data); // different port A outputs are parsed differently
-            } else if (port == "B") {
+            } else if (port == 'B') {
                 WriteCommandToGui("B RD", data);
             } else throw new Exception("invalid port: " + port);
         } // End ReceivedData
@@ -52,7 +52,7 @@ namespace Nevis14 {
          */
         public void SendStatus () {
             var data = GetStatus();
-            ftdi.WriteToChip("B", data);
+            ftdi.WriteToChip('B', data);
             WriteCommandToGui("B WR", data);
         } // End SendStatus
 
@@ -101,12 +101,12 @@ namespace Nevis14 {
             fifoAOperation = 0;
             fifoACounter = 0;
             if (op != 2 && data.Count > 0) {
-                ftdi.WriteToChip("A", data);
+                ftdi.WriteToChip('A', data);
                 WriteCommandToGui("A   ", data);
                 startControlOperation = 1; SendStatus();
                 startControlOperation = 0;
-                ftdi.ReadFromChip("B", ReceivedData);
-                //ftdi.ReadFromChip("A", ReceivedData);
+                ftdi.ReadFromChip('B', ReceivedData);
+                //ftdi.ReadFromChip('A', ReceivedData);
             }
         } // End DoFifoAOperation
 
@@ -157,8 +157,8 @@ namespace Nevis14 {
             DoFifoAOperation(2, null, 80);
 
             bufferA.Clear();
-            ftdi.ReadFromChip("B", ReceivedData);
-            ftdi.ReadFromChip("A", ReceivedData);
+            ftdi.ReadFromChip('B', ReceivedData);
+            ftdi.ReadFromChip('A', ReceivedData);
             List<uint> parsedConfig = ParseConfig(bufferA);
             dataBox.Update(() => dataBox.AppendText(""));
             config.AddRange(parsedConfig);
@@ -233,8 +233,8 @@ namespace Nevis14 {
                 DoFifoAOperation(2, null, 1);
 
                 bufferA.Clear();
-                ftdi.ReadFromChip("B", ReceivedData);
-                ftdi.ReadFromChip("A", ReceivedData);
+                ftdi.ReadFromChip('B', ReceivedData);
+                ftdi.ReadFromChip('A', ReceivedData);
                 List<uint> parsedCalib = ParseCalib(bufferA);
                 dataBox.Update(() => dataBox.AppendText(
                     Environment.NewLine + parsedCalib[0] + " " + parsedCalib[1]
@@ -267,7 +267,7 @@ namespace Nevis14 {
 
             bufferA.Clear();
             while (bufferA.Count < samples * 8) {
-                ftdi.ReadFromChip("A", ReceivedData);
+                ftdi.ReadFromChip('A', ReceivedData);
             }
 
             fifoAOperation = 0;
@@ -288,7 +288,7 @@ namespace Nevis14 {
             SendStartFifoACommand();
 
             bufferA.Clear();
-            ftdi.ReadFromChip("A", ReceivedData);
+            ftdi.ReadFromChip('A', ReceivedData);
 
             fifoAOperation = 0;
             fifoACounter = 0;
