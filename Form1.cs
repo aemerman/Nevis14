@@ -19,7 +19,7 @@ namespace Nevis14 {
         string filePath = Application.StartupPath + "/../../OUTPUT/";
 
         //TODO: add calibration constant requirements 
-        const double calBound = 0.1;  // maximum % for the calibration parameters
+        const double calBound = 0.10;  // maximum % for the calibration parameters
         const double enobBound = 9.5; // minimum ENOB required for the chip to be good
         const string chipYear = "14";
 
@@ -533,7 +533,7 @@ namespace Nevis14 {
                 // are lost then the chip is defective
                 chipControl1.adcs[iCh].dynamicRange = corr[0] + corr[2] + corr[4] + corr[6] + 128;
                 Console.WriteLine("Dynamic range of chip is: " + chipControl1.adcs[iCh].dynamicRange);
-                return ((1 - chipControl1.adcs[iCh].dynamicRange / 4096) < calBound);
+                return ((1 - (chipControl1.adcs[iCh].dynamicRange / 4096.0)) < calBound);
             }
         }   // End CheckCalibration
 
@@ -705,8 +705,8 @@ namespace Nevis14 {
                 Global.ShowError("FTDI exception: " + exc.Message);
             }
 
-            SeeTest(5);
-            /*
+            //SeeTest(5);
+            
             if (!DoCalibration(thisWorker, e)) { e.Result = false; return; }
 
             DialogResult answer = MessageBox.Show("Finished calibrating. Please turn on the waveform generator.",
@@ -721,7 +721,7 @@ namespace Nevis14 {
             WriteDataToFile();
             WriteResult(adcData);
             e.Result = true;
-            */
+            
         } // End bkgWorker_DoWork
 
         private void bkgWorker_RunWorkerCompleted (object sender, RunWorkerCompletedEventArgs e) {
