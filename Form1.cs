@@ -560,7 +560,8 @@ namespace Nevis14 {
 
         public void SeeTest (int waitTimeInSeconds) {
             adcFilter = 0; SendStatus();
-            SendPllResetCommand();
+            adcFilter = 1; SendStatus(); // where does this go?
+            //SendPllResetCommand();
             for (uint iCh = 0; iCh < 4; iCh++) {
                 chipControl1.SafeInvoke(() => {
                     chipControl1.adcs[iCh].oFlag = 0;
@@ -569,6 +570,7 @@ namespace Nevis14 {
                 SendCalibControl(iCh);
             }
             // Fill buffer
+            SendStartMeasurementCommand();
 
             for (uint iCh = 0; iCh < 4; iCh++) {
                 chipControl1.SafeInvoke(() => {
@@ -577,11 +579,10 @@ namespace Nevis14 {
                 });
                 SendCalibControl(iCh);
             }
-            adcFilter = 1; SendStatus();
             SendStartMeasurementCommand();
             SendPllResetCommand();
 
-            GetAdcData(1000); // Initialize SEE data taking
+            GetAdcData(1000); // Initialize SEE data taking?
             System.Threading.Thread.Sleep(waitTimeInSeconds * 1000);
             GetAdcData(1000);
             List<string> lines = ParseSee(bufferA);
