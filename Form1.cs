@@ -756,9 +756,9 @@ namespace Nevis14 {
             bool underperf = false;
             bool defect = false;
             for (int i = 0; i < 4; i++) {
-                if (adcData[i].enob < (enobBound * 0.9) || (1 - chipControl1.adcs[i].dynamicRange / 4096) < calBound) {
+                if (adcData[i].enob < (enobBound * 0.9) || (1 - chipControl1.adcs[i].dynamicRange / 4096) < calBound) 
                     defect = true;
-                } else if (adcData[i].enob < enobBound) {
+                else if (adcData[i].enob < enobBound)
                     underperf = true;
                 resultBox.Update(() => resultBox.Text += "Channel " + (i + 1) 
                     + Environment.NewLine + "   ENOB = " + Math.Round(adcData[i].enob,4)
@@ -769,10 +769,10 @@ namespace Nevis14 {
                     resultBox.Text += "Chip fully operational"; });
             }
             else {
-                if (defect) {
+                if (defect){
                     resultBox.Update(() => { resultBox.BackColor = Color.Red; 
                         resultBox.Text += "Defective Chip"; });
-                } else {
+                }else{
                     resultBox.Update(() => { resultBox.BackColor = Color.Yellow;
                         resultBox.Text += "Chip Underperforming"; });
                     
