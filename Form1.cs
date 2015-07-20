@@ -760,7 +760,6 @@ namespace Nevis14 {
                     defect = true;
                 else if (adcData[i].enob < enobBound)
                     underperf = true;
-                }
                 resultBox.Update(() => resultBox.Text += "Channel " + (i + 1) 
                     + Environment.NewLine + "   ENOB = " + Math.Round(adcData[i].enob,4)
                     + Environment.NewLine + "   Range = " + chipControl1.adcs[i].dynamicRange);
