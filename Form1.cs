@@ -586,6 +586,9 @@ namespace Nevis14 {
             System.Threading.Thread.Sleep(waitTimeInSeconds * 1000);
             GetAdcData(1000);
             List<string> lines = ParseSee(bufferA);
+            // Add new files or just append to the one? Will the file get too big??
+            // Could scan the lines while they're in buffer and only print the number
+            // of deviations. How long would that take (O(s), O(ms))?
             File.AppendAllText(filePath + "seeData.txt", DateTime.Now + Environment.NewLine);
             File.AppendAllLines(filePath + "seeData.txt", lines);
             File.AppendAllText(filePath + "seeData.txt", Environment.NewLine);
