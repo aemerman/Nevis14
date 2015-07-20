@@ -750,23 +750,32 @@ namespace Nevis14 {
 
         private void WriteResult (AdcData[] adcData) {
             if (adcData.Length != 4) throw new Exception("Invalid input to WriteResult.");
-            bool problem = false;
+            bool underperf = false;
+            bool defect = false;
             for (int i = 0; i < 4; i++) {
-                if (adcData[i].enob < enobBound || (1 - chipControl1.adcs[i].dynamicRange / 4096) < calBound) {
-                    problem = true;
+                if (adcData[i].enob < (enobBound * 0.9) || (1 - chipControl1.adcs[i].dynamicRange / 4096) < calBound) {
+                    defect = true;
+                else if (adcData[i].enob < enobBound)
+                    underperf = true;
                 }
                 resultBox.Update(() => resultBox.Text += "Channel " + (i + 1) 
                     + Environment.NewLine + "   ENOB = " + Math.Round(adcData[i].enob,4)
                     + Environment.NewLine + "   Range = " + chipControl1.adcs[i].dynamicRange);
             }
-            if (!problem) {
+            if (!underperf && !defect) {
                 resultBox.Update(() => { resultBox.BackColor = Color.Green; 
                     resultBox.Text += "Chip fully operational"; });
-            } else {
-                resultBox.Update(() => { resultBox.BackColor = Color.Red; 
-                    resultBox.Text += "Defective Chip"; });
             }
-
+            else {
+                if (defect){
+                    resultBox.Update(() => { resultBox.BackColor = Color.Red; 
+                        resultBox.Text += "Defective Chip"; });
+                }else{
+                    resultBox.Update(() => { resultBox.BackColor = Color.Yellow;
+                        resultBox.Text += "Chip Underperforming"; });
+                    
+                }
+            }
         } // End WriteResult
     } // End Form1
 }
