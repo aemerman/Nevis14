@@ -108,7 +108,7 @@ namespace Nevis14 {
                 if (bufferA[i + 1] != (15 << 4)) return false; // byte should be 8'b11110000
             }
             return true;
-        }
+        } // End SerializerTest
 
         /// <summary>
         /// Manage the calibration calculation
@@ -149,7 +149,7 @@ namespace Nevis14 {
                 chipControl1.Update(() => chipControl1.adcs[channelNum].IsCalibrated(success));
 
                 // Get ready for next channel
-                if (!success) { e.Result = false; return false; }
+                //if (!success) { e.Result = false; return false; }
                 if (bw.CancellationPending) { e.Cancel = true; return false; }
 
                 channelNum++; mdacNum = 3; calNum = 0;
@@ -531,9 +531,9 @@ namespace Nevis14 {
                
                 // Check the dynamic range of the channel, if more than calBound% of the counts
                 // are lost then the chip is defective
-                double chipRange = corr[0] + corr[2] + corr[4] + corr[6] + 128;
-                Console.WriteLine("Dynamic range of chip is: " + chipRange);
-                return ((1 - chipRange / 4096) < calBound);
+                chipControl1.adcs[iCh].dynamicRange = corr[0] + corr[2] + corr[4] + corr[6] + 128;
+                Console.WriteLine("Dynamic range of chip is: " + chipControl1.adcs[iCh].dynamicRange);
+                return ((1 - chipControl1.adcs[iCh].dynamicRange / 4096) < calBound);
             }
         }   // End CheckCalibration
 
@@ -558,7 +558,7 @@ namespace Nevis14 {
             return true;
         } // End TakeData
 
-        public void SeeTest () {
+        public void SeeTest (int waitTimeInSeconds) {
             adcFilter = 0; SendStatus();
             SendPllResetCommand();
             for (uint iCh = 0; iCh < 4; iCh++) {
@@ -568,7 +568,7 @@ namespace Nevis14 {
                 });
                 SendCalibControl(iCh);
             }
-            GetAdcData(1000);
+            // Fill buffer
 
             for (uint iCh = 0; iCh < 4; iCh++) {
                 chipControl1.SafeInvoke(() => {
@@ -577,23 +577,25 @@ namespace Nevis14 {
                 });
                 SendCalibControl(iCh);
             }
-            adcFilter = 1; SendStatus(); // ?
+            adcFilter = 1; SendStatus();
             SendStartMeasurementCommand();
-            //ftdi.WaitForData('B', ReceivedData);
-            // wait for data on A
-
             SendPllResetCommand();
 
+            GetAdcData(1000); // Initialize SEE data taking
+            System.Threading.Thread.Sleep(waitTimeInSeconds * 1000);
             GetAdcData(1000);
             List<string> lines = ParseSee(bufferA);
             File.AppendAllText(filePath + "seeData.txt", DateTime.Now + Environment.NewLine);
             File.AppendAllLines(filePath + "seeData.txt", lines);
+            File.AppendAllText(filePath + "seeData.txt", Environment.NewLine);
 
             GetPllData(10);
             lines = ParseSee(bufferA);
             File.AppendAllText(filePath + "pllData.txt", DateTime.Now + Environment.NewLine);
             File.AppendAllLines(filePath + "pllData.txt", lines);
-            
+            File.AppendAllText(filePath + "pllData.txt", Environment.NewLine);
+
+            adcFilter = 0; SendStatus();
             return;
         } // End SeeTest
 
@@ -608,7 +610,6 @@ namespace Nevis14 {
                     // Show the binary numbers
                     s += Convert.ToString(data[i + j], 2).PadLeft(8, '0') + " ";
                 }
-                s += Environment.NewLine;
                 lines.Add(s);
             }
             return lines;
@@ -654,7 +655,6 @@ namespace Nevis14 {
                 Environment.NewLine + port + " " + s);
         } // End WriteCommandToGui
 
-
         private void runButton_Click (object sender, EventArgs e) {
             // The background worker will only be started if there is a valid chip number (any int)
             if (this.chipNumBox.Text == "" || this.chipNumBox.BackColor == System.Drawing.Color.Red) {
@@ -681,11 +681,6 @@ namespace Nevis14 {
                 System.IO.Directory.CreateDirectory(filePath);
                 System.IO.Directory.CreateDirectory(filePath + "Run00/");
                 filePath += "Run00/";
-                /*
-                System.IO.Directory.CreateDirectory(filePath + "Data/");
-                System.IO.Directory.CreateDirectory(filePath + "Calibration/");
-                System.IO.Directory.CreateDirectory(filePath + "QaParameters/");
-                */
             } else {
                 int run = 0;
                 string runFolder = filePath + "Run" + Convert.ToString(run).PadLeft(2, '0');
@@ -705,15 +700,15 @@ namespace Nevis14 {
             } catch (FTD2XX_NET.FTDI.FT_EXCEPTION exc) { // handles FTDI exceptions
                 Global.ShowError("FTDI exception: " + exc.Message);
             }
-            //try {
 
+            SeeTest(5);
+            /*
             if (!DoCalibration(thisWorker, e)) { e.Result = false; return; }
 
             DialogResult answer = MessageBox.Show("Finished calibrating. Please turn on the waveform generator.",
                 "", MessageBoxButtons.OKCancel);
             if (answer == DialogResult.Cancel) { e.Cancel = true; return; }
 
-            //if (!DoFft(bw, DateTime.UtcNow)) return false;
             if (!TakeData()) { e.Result = false; Console.WriteLine("Error Taking Data"); return; }
 
             Console.WriteLine("Data Taken");
@@ -722,14 +717,7 @@ namespace Nevis14 {
             WriteDataToFile();
             WriteResult(adcData);
             e.Result = true;
-
-            /*} catch (FTD2XX_NET.FTDI.FT_EXCEPTION exc) { // handles FTDI exceptions
-                Global.ShowError("FTDI exception: " + exc.Message);
-                e.Result = false;
-            } catch (Exception exc) { // handles everything else
-                Global.ShowError(exc.Message);
-                e.Result = false;
-            }*/
+            */
         } // End bkgWorker_DoWork
 
         private void bkgWorker_RunWorkerCompleted (object sender, RunWorkerCompletedEventArgs e) {
@@ -763,9 +751,12 @@ namespace Nevis14 {
             if (adcData.Length != 4) throw new Exception("Invalid input to WriteResult.");
             bool problem = false;
             for (int i = 0; i < 4; i++) {
-                if (adcData[i].enob < enobBound) problem = true;
+                if (adcData[i].enob < enobBound || (1 - chipControl1.adcs[i].dynamicRange / 4096) < calBound) {
+                    problem = true;
+                }
                 resultBox.Update(() => resultBox.Text += "Channel " + (i + 1) 
-                    + " ENOB = " + adcData[i].enob + Environment.NewLine);
+                    + Environment.NewLine + "   ENOB = " + Math.Round(adcData[i].enob,4)
+                    + Environment.NewLine + "   Range = " + chipControl1.adcs[i].dynamicRange);
             }
             if (!problem) {
                 resultBox.Update(() => { resultBox.BackColor = Color.Green; 

@@ -104,6 +104,7 @@ namespace Nevis14 {
         public uint oFlag = 0;
         public uint sarInput = 0;
         public uint serializer = 0;
+        public uint dynamicRange = 0;
 
         private uint _dac1, _dac2;
         public class Mdac {

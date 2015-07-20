@@ -288,7 +288,9 @@ namespace Nevis14 {
             SendStartFifoACommand();
 
             bufferA.Clear();
-            ftdi.ReadFromChip('A', ReceivedData);
+            while (bufferA.Count < samples * 8) {
+                ftdi.ReadFromChip('A', ReceivedData);
+            }
 
             fifoAOperation = 0;
             fifoACounter = 0;
