@@ -79,11 +79,12 @@ namespace Nevis14 {
 
         Ftdi ftdi;
 
+        Stopwatch getconsts = new Stopwatch();
+        Stopwatch checkcalib = new Stopwatch();
+        Stopwatch readtime = new Stopwatch();
         Stopwatch fullcalib = new Stopwatch();
         Stopwatch docaltime = new Stopwatch();
-        Stopwatch sendcalibcont = new Stopwatch();
-        Stopwatch getadccalib = new Stopwatch();
-        Stopwatch totaltime = new Stopwatch();
+        Stopwatch getadctime = new Stopwatch();
 
         // begin functions
         public Form1 () { 
@@ -185,14 +186,8 @@ namespace Nevis14 {
             double[] totMdac = new double[4] { 0, 0, 0, 0 };
 
             adc.SetCalInfo(calNum, mdacNum);
-
-            sendcalibcont.Start();
             SendCalibControl(adc.GetChannel());
-            sendcalibcont.Stop();
-
-            getadccalib.Start();
             GetAdcData(samplesForCalib);
-            getadccalib.Stop();
             // If the buffer is not full, then retry up to two times
             if (bufferA.Count != samplesForCalib * 8) {
                 Console.WriteLine(Environment.NewLine + "Retrying MDAC: " + (mdacNum + 1) + " calnum: " + calNum
@@ -268,6 +263,7 @@ namespace Nevis14 {
         /// if Apply clicked and saves them to a file if Cal clicked
         /// </summary>
         public void GetConst (int channelNum) {
+            getconsts.Start();
             // Initializing SAR and MDAC arrays from the calibration process
             // sarForMdac[] stores 16 sar readings, one from each calibration step
             // avgMdac[] stores 64 mdac readings, 4 mdacs for each of 16 steps in cal
@@ -491,6 +487,7 @@ namespace Nevis14 {
                 + Math.Round(finalCalib[2], 3) + ", "
                 + Math.Round(finalCalib[3], 3) + ", ";
             Console.WriteLine("================Ended Calibration================");
+            getconsts.Stop();
         }   // End GetConst
 
         /// <summary>
@@ -504,6 +501,7 @@ namespace Nevis14 {
         /// <param name="e"></param>
         /// 
         public bool CheckCalibration (int iCh, int retry = 0) {
+            checkcalib.Start();
             if (retry > 10) { return false; }
 
             SendCalibControl((uint) iCh);
@@ -547,6 +545,7 @@ namespace Nevis14 {
                 // are lost then the chip is defective
                 chipControl1.adcs[iCh].dynamicRange = corr[0] + corr[2] + corr[4] + corr[6] + 128;
                 Console.WriteLine("Dynamic range of chip is: " + chipControl1.adcs[iCh].dynamicRange);
+                checkcalib.Stop();
                 return ((1 - (chipControl1.adcs[iCh].dynamicRange / 4096.0)) < calBound);
             }
         }   // End CheckCalibration
@@ -557,10 +556,13 @@ namespace Nevis14 {
         /// </summary>
         /// <returns></returns>
         public bool TakeData () {
+            readtime.Start();
             GetAdcData(12400);
             if (bufferA.Count != 12400 * 8) { Console.WriteLine(bufferA.Count); return false; }
 
-            //WriteDataToGui(bufferA);
+            getadctime.Start();
+            WriteDataToGui(bufferA);
+            getadctime.Stop();
 
             StreamWriter adcwrite = new StreamWriter(filePath + "adcData.txt");
             for (int i = 0; i < bufferA.Count; i += 8) {
@@ -573,6 +575,7 @@ namespace Nevis14 {
             adcwrite.Close();
 
             //System.IO.File.AppendAllText(filePath + "adcData.txt", s);
+            readtime.Stop();
             return true;
         } // End TakeData
 
@@ -659,32 +662,22 @@ namespace Nevis14 {
 
         // Parses commands and writes them to the command box (upper left on GUI)
         private void WriteCommandToGui (string port, List<byte> data) {
-
             string s = "";
-            using (StreamWriter commandsout = File.AppendText(filePath + "commands.log"))
-            {
-                commandsout.Write(Environment.NewLine + port + " ");
-                for (int i = 0; i < data.Count; i++)
-                {
-                    s += Global.NumberToString((uint)data[i], 16, 2) + " ";
-                }
-                commandsout.Write(s);
-            };
-            if (commandCheckBox.Checked)
-            {
-                commandBox.Update(() =>
-                {
-                    // Keep 100 lines at a time in the text box
-                    if (commandBox.Lines.Length > 100)
-                    {
-                        commandBox.Lines = commandBox.Lines.ToList().Skip(1).ToArray();
-                    }
 
-                    commandBox.AppendText(Environment.NewLine + port + " " + s);
-                });
+            for (int i = 0; i < data.Count; i++) {
+                s += Global.NumberToString((uint) data[i], 16, 2) + " ";
             }
-            /*System.IO.File.AppendAllText(filePath + "commands.log",
-                Environment.NewLine + port + " " + s);*/
+
+            commandBox.Update(() => {
+                // Keep 100 lines at a time in the text box
+                if (commandBox.Lines.Length > 100) {
+                    commandBox.Lines = commandBox.Lines.ToList().Skip(1).ToArray();
+                }
+
+                commandBox.AppendText(Environment.NewLine + port + " " + s);
+            });
+            System.IO.File.AppendAllText(filePath + "commands.log",
+                Environment.NewLine + port + " " + s);
         } // End WriteCommandToGui
 
         private void runButton_Click (object sender, EventArgs e) {
@@ -704,7 +697,6 @@ namespace Nevis14 {
 
         private void bkgWorker_DoWork (object sender, DoWorkEventArgs e) {
             BackgroundWorker thisWorker = sender as BackgroundWorker;
-            totaltime.Start();
             // Normally the RunWorkerCompleted method would handle exceptions, but
             // that doesn't work in the debugger. Will the undergrads be using a
             // release version?
@@ -739,11 +731,10 @@ namespace Nevis14 {
             if (!DoCalibration(thisWorker, e)) { e.Result = false; return; }
             fullcalib.Stop();
 
-            totaltime.Stop();
             DialogResult answer = MessageBox.Show("Finished calibrating. Please turn on the waveform generator.",
                 "", MessageBoxButtons.OKCancel);
             if (answer == DialogResult.Cancel) { e.Cancel = true; return; }
-            totaltime.Start();
+
             if (!TakeData()) { e.Result = false; Console.WriteLine("Error Taking Data"); return; }
 
             Console.WriteLine("Data Taken");
@@ -751,11 +742,12 @@ namespace Nevis14 {
             if (adcData == null) throw new Exception("No data returned from FFT3.");
             WriteDataToFile();
             WriteResult(adcData);
-            totaltime.Stop();
-            Console.WriteLine(String.Format("{0} elapsed for full calibration ({1}%)", fullcalib.Elapsed, 100 * fullcalib.ElapsedMilliseconds / totaltime.ElapsedMilliseconds));
-            Console.WriteLine(String.Format("{0} spent on 'DoCalWork' ({1}%)", docaltime.Elapsed, 100 * docaltime.ElapsedMilliseconds / totaltime.ElapsedMilliseconds));
-            Console.WriteLine(String.Format("{0} spent on 'DoCalWork' ({1}%)", sendcalibcont.Elapsed, 100 * sendcalibcont.ElapsedMilliseconds / totaltime.ElapsedMilliseconds));
-            Console.WriteLine(String.Format("{0} spent on 'DoCalWork' ({1}%)", getadccalib.Elapsed, 100 * getadccalib.ElapsedMilliseconds / totaltime.ElapsedMilliseconds));
+            Console.WriteLine(getconsts.Elapsed + " spent in 'GetConsts'");
+            Console.WriteLine(checkcalib.Elapsed + " spent in 'CheckCalib'");
+            Console.WriteLine(readtime.Elapsed + " spent Taking Data");
+            Console.WriteLine(fullcalib.Elapsed + " time elapsed for full calibration");
+            Console.WriteLine(docaltime.Elapsed + " spent on 'DoCalWork'");
+            Console.WriteLine(getadctime.Elapsed + " spent writing ADC data to GUI");
             e.Result = true;
             
         } // End bkgWorker_DoWork
@@ -798,8 +790,7 @@ namespace Nevis14 {
                     underperf = true;
                 resultBox.Update(() => resultBox.Text += "Channel " + (i + 1) 
                     + Environment.NewLine + "   ENOB = " + Math.Round(adcData[i].enob,4)
-                    + Environment.NewLine + "   Range = " + chipControl1.adcs[i].dynamicRange 
-                    + Environment.NewLine);
+                    + Environment.NewLine + "   Range = " + chipControl1.adcs[i].dynamicRange);
             }
             if (!underperf && !defect) {
                 resultBox.Update(() => { resultBox.BackColor = Color.Green; 

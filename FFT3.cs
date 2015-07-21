@@ -65,6 +65,9 @@ namespace Nevis14 {
             time = DateTime.Now;
             double[][] signalHisto = readData();
             Console.WriteLine(String.Format("Reading Data Took {0} Seconds", (DateTime.Now - time).TotalSeconds));
+            StreamWriter datain = new StreamWriter(filePath + "in.txt");
+            for (int i = 0; i < sampLength; i++)
+                datain.WriteLine(signalHisto[0][i]);
 
             formatChart("sig");
             chart1.SaveImage(filePath + "signal.png", ChartImageFormat.Png);
@@ -94,7 +97,11 @@ namespace Nevis14 {
 
                 //----Do the FFT----//
 
+                StreamWriter debugger = new StreamWriter(filePath + "test.txt");
                 double[] fourierHisto = doFFT(signalHisto[isig]);
+                for (int i = 0; i < sampLength; i++)
+                    debugger.WriteLine(fourierHisto[i] + "");
+                debugger.Close();
 
                 //----Find the Second Largest Value----// 
                 bin1 = fourierHisto[0];         // bin1 has the largest value, however
@@ -440,6 +447,7 @@ namespace Nevis14 {
             double[] fourierOut = fourierComplex.GetData_double();
 
             double re, im;
+            StreamWriter debugger = new StreamWriter(filePath + "test2.txt");
             for (int i = 0; i < sampLength; i++)
             {
                 if (i < sampLength / 2 + 1)
@@ -453,7 +461,9 @@ namespace Nevis14 {
                     im = -(fourierOut[2 * (sampLength - i) + 1]);
                 }
                 fourierHisto[i] = Math.Sqrt(re * re + im * im);
+                debugger.WriteLine(String.Format("{3}, {0}, {1}, {2}", fourierHisto[i], fourierOut[2 * i], fourierOut[2 * i + 1], signalHisto[i]));
             }
+            debugger.Close();
             return fourierHisto;
         }
     }

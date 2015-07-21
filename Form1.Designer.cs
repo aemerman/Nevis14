@@ -33,7 +33,6 @@
             this.fftBox = new System.Windows.Forms.PictureBox();
             this.resultBox = new System.Windows.Forms.TextBox();
             this.chipControl1 = new Nevis14.ChipControl();
-            this.commandCheckBox = new System.Windows.Forms.CheckBox();
             ((System.ComponentModel.ISupportInitialize)(this.fftBox)).BeginInit();
             this.SuspendLayout();
             // 
@@ -50,11 +49,11 @@
             // 
             // commandBox
             // 
-            this.commandBox.Location = new System.Drawing.Point(605, 40);
+            this.commandBox.Location = new System.Drawing.Point(605, 10);
             this.commandBox.Multiline = true;
             this.commandBox.Name = "commandBox";
             this.commandBox.ReadOnly = true;
-            this.commandBox.Size = new System.Drawing.Size(385, 100);
+            this.commandBox.Size = new System.Drawing.Size(385, 130);
             this.commandBox.TabIndex = 1;
             // 
             // bkgWorker
@@ -86,7 +85,7 @@
             // 
             this.chipNumBox.Location = new System.Drawing.Point(105, 10);
             this.chipNumBox.Name = "chipNumBox";
-            this.chipNumBox.Size = new System.Drawing.Size(85, 22);
+            this.chipNumBox.Size = new System.Drawing.Size(85, 29);
             this.chipNumBox.TabIndex = 7;
             this.chipNumBox.ValidatingType = typeof(int);
             this.chipNumBox.TypeValidationCompleted += new System.Windows.Forms.TypeValidationEventHandler(this.chipNumBox_TypeValidationCompleted);
@@ -130,22 +129,11 @@
             this.chipControl1.slvsControl = ((uint)(0u));
             this.chipControl1.TabIndex = 3;
             // 
-            // commandCheckBox
-            // 
-            this.commandCheckBox.AutoSize = true;
-            this.commandCheckBox.Location = new System.Drawing.Point(605, 17);
-            this.commandCheckBox.Name = "commandCheckBox";
-            this.commandCheckBox.Size = new System.Drawing.Size(215, 18);
-            this.commandCheckBox.TabIndex = 11;
-            this.commandCheckBox.Text = "Print commands sent to chip";
-            this.commandCheckBox.UseVisualStyleBackColor = true;
-            // 
             // Form1
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 14F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(10F, 22F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1000, 750);
-            this.Controls.Add(this.commandCheckBox);
             this.Controls.Add(this.resultBox);
             this.Controls.Add(this.fftBox);
             this.Controls.Add(this.chipNumLabel);
@@ -176,7 +164,6 @@
         private System.Windows.Forms.Label chipNumLabel;
         private System.Windows.Forms.PictureBox fftBox;
         private System.Windows.Forms.TextBox resultBox;
-        private System.Windows.Forms.CheckBox commandCheckBox;
     }
 }
 
