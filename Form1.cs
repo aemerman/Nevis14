@@ -670,19 +670,10 @@ namespace Nevis14 {
                 }
                 commandsout.Write(s);
             };
-            if (commandCheckBox.Checked)
-            {
-                commandBox.Update(() =>
-                {
-                    // Keep 100 lines at a time in the text box
-                    if (commandBox.Lines.Length > 100)
-                    {
-                        commandBox.Lines = commandBox.Lines.ToList().Skip(1).ToArray();
-                    }
 
-                    commandBox.AppendText(Environment.NewLine + port + " " + s);
-                });
-            }
+            if (commandCheckBox.Checked)
+                commandBox.Update(() => commandBox.AppendText(Environment.NewLine + port + " " + s));
+
             /*System.IO.File.AppendAllText(filePath + "commands.log",
                 Environment.NewLine + port + " " + s);*/
         } // End WriteCommandToGui
