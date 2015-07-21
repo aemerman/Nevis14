@@ -1,0 +1,10 @@
+C:\Users\Max Beck\Documents\Physics\Chip Testing\Nevis14\bin\Release\Nevis14.exe.config
+C:\Users\Max Beck\Documents\Physics\Chip Testing\Nevis14\bin\Release\Nevis14.exe
+C:\Users\Max Beck\Documents\Physics\Chip Testing\Nevis14\bin\Release\Nevis14.pdb
+C:\Users\Max Beck\Documents\Physics\Chip Testing\Nevis14\bin\Release\FTD2XX_NET.dll
+C:\Users\Max Beck\Documents\Physics\Chip Testing\Nevis14\obj\Release\Nevis14.ChipControl.resources
+C:\Users\Max Beck\Documents\Physics\Chip Testing\Nevis14\obj\Release\Nevis14.Form1.resources
+C:\Users\Max Beck\Documents\Physics\Chip Testing\Nevis14\obj\Release\Nevis14.Properties.Resources.resources
+C:\Users\Max Beck\Documents\Physics\Chip Testing\Nevis14\obj\Release\Nevis14.csproj.GenerateResource.Cache
+C:\Users\Max Beck\Documents\Physics\Chip Testing\Nevis14\obj\Release\Nevis14.exe
+C:\Users\Max Beck\Documents\Physics\Chip Testing\Nevis14\obj\Release\Nevis14.pdb

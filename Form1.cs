@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -78,8 +79,15 @@ namespace Nevis14 {
 
         Ftdi ftdi;
 
+        Stopwatch getconsts = new Stopwatch();
+        Stopwatch checkcalib = new Stopwatch();
+        Stopwatch readtime = new Stopwatch();
+        Stopwatch fullcalib = new Stopwatch();
+        Stopwatch docaltime = new Stopwatch();
+        Stopwatch getadctime = new Stopwatch();
+
         // begin functions
-        public Form1 () {
+        public Form1 () { 
             InitializeComponent();
         } // End constructor 
 
@@ -128,8 +136,9 @@ namespace Nevis14 {
                 chipControl1.Update(() => chipControl1.Activate((uint) channelNum));
                 while (mdacNum >= 0) {
                     if (bw.CancellationPending) { e.Cancel = true; return false; }
-
+                    docaltime.Start();
                     if (!DoCalWork(ref chipControl1.adcs[channelNum], calNum, mdacNum)) return false;
+                    docaltime.Stop();
                     calNum++;
                     if (calNum == 4) {
                         chipControl1.Update(() => chipControl1.adcs[channelNum].SetCalInfo(calNum, mdacNum));
@@ -254,6 +263,7 @@ namespace Nevis14 {
         /// if Apply clicked and saves them to a file if Cal clicked
         /// </summary>
         public void GetConst (int channelNum) {
+            getconsts.Start();
             // Initializing SAR and MDAC arrays from the calibration process
             // sarForMdac[] stores 16 sar readings, one from each calibration step
             // avgMdac[] stores 64 mdac readings, 4 mdacs for each of 16 steps in cal
@@ -477,6 +487,7 @@ namespace Nevis14 {
                 + Math.Round(finalCalib[2], 3) + ", "
                 + Math.Round(finalCalib[3], 3) + ", ";
             Console.WriteLine("================Ended Calibration================");
+            getconsts.Stop();
         }   // End GetConst
 
         /// <summary>
@@ -490,6 +501,7 @@ namespace Nevis14 {
         /// <param name="e"></param>
         /// 
         public bool CheckCalibration (int iCh, int retry = 0) {
+            checkcalib.Start();
             if (retry > 10) { return false; }
 
             SendCalibControl((uint) iCh);
@@ -533,6 +545,7 @@ namespace Nevis14 {
                 // are lost then the chip is defective
                 chipControl1.adcs[iCh].dynamicRange = corr[0] + corr[2] + corr[4] + corr[6] + 128;
                 Console.WriteLine("Dynamic range of chip is: " + chipControl1.adcs[iCh].dynamicRange);
+                checkcalib.Stop();
                 return ((1 - (chipControl1.adcs[iCh].dynamicRange / 4096.0)) < calBound);
             }
         }   // End CheckCalibration
@@ -543,18 +556,26 @@ namespace Nevis14 {
         /// </summary>
         /// <returns></returns>
         public bool TakeData () {
+            readtime.Start();
             GetAdcData(12400);
             if (bufferA.Count != 12400 * 8) { Console.WriteLine(bufferA.Count); return false; }
 
+            getadctime.Start();
             WriteDataToGui(bufferA);
-            string s = "";
+            getadctime.Stop();
+
+            StreamWriter adcwrite = new StreamWriter(filePath + "adcData.txt");
             for (int i = 0; i < bufferA.Count; i += 8) {
+                string s = "";
                 for (int j = 0; j < 8; j += 2) {
                     s += ((bufferA[i + j] << 8) + bufferA[i + j + 1]) + " ";
                 }
-                s += "\r\n";
+                adcwrite.WriteLine(s);
             }
-            System.IO.File.AppendAllText(filePath + "adcData.txt", s);
+            adcwrite.Close();
+
+            //System.IO.File.AppendAllText(filePath + "adcData.txt", s);
+            readtime.Stop();
             return true;
         } // End TakeData
 
@@ -706,8 +727,9 @@ namespace Nevis14 {
             }
 
             //SeeTest(5);
-            
+            fullcalib.Start();
             if (!DoCalibration(thisWorker, e)) { e.Result = false; return; }
+            fullcalib.Stop();
 
             DialogResult answer = MessageBox.Show("Finished calibrating. Please turn on the waveform generator.",
                 "", MessageBoxButtons.OKCancel);
@@ -720,6 +742,12 @@ namespace Nevis14 {
             if (adcData == null) throw new Exception("No data returned from FFT3.");
             WriteDataToFile();
             WriteResult(adcData);
+            Console.WriteLine(getconsts.Elapsed + " spent in 'GetConsts'");
+            Console.WriteLine(checkcalib.Elapsed + " spent in 'CheckCalib'");
+            Console.WriteLine(readtime.Elapsed + " spent Taking Data");
+            Console.WriteLine(fullcalib.Elapsed + " time elapsed for full calibration");
+            Console.WriteLine(docaltime.Elapsed + " spent on 'DoCalWork'");
+            Console.WriteLine(getadctime.Elapsed + " spent writing ADC data to GUI");
             e.Result = true;
             
         } // End bkgWorker_DoWork
