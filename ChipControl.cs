@@ -63,7 +63,7 @@ namespace Nevis14 {
         } // End Deactivate
         public void IsCalibrated (bool success) {
             this.Update(() => this.adcButton.BackColor = 
-                success ? System.Drawing.Color.Green : System.Drawing.Color.Red);
+                success ? System.Drawing.Color.Green : System.Drawing.Color.Red, true);
         } // End IsCalibrated
          
         // The Update method for AdcControl contains a check

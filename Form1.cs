@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -84,6 +84,7 @@ namespace Nevis14 {
         Stopwatch sendcalibcont = new Stopwatch();
         Stopwatch getadccalib = new Stopwatch();
         Stopwatch totaltime = new Stopwatch();
+        Stopwatch fftTime = new Stopwatch();
 
         // begin functions
         public Form1 () { 
@@ -132,7 +133,7 @@ namespace Nevis14 {
             int mdacNum = 3;
 
             while (channelNum <= 3) {
-                chipControl1.Update(() => chipControl1.Activate((uint) channelNum));
+                chipControl1.Update(() => chipControl1.Activate((uint) channelNum), true);
                 while (mdacNum >= 0) {
                     if (bw.CancellationPending) { e.Cancel = true; return false; }
                     docaltime.Start();
@@ -140,12 +141,12 @@ namespace Nevis14 {
                     docaltime.Stop();
                     calNum++;
                     if (calNum == 4) {
-                        chipControl1.Update(() => chipControl1.adcs[channelNum].SetCalInfo(calNum, mdacNum));
+                        chipControl1.Update(() => chipControl1.adcs[channelNum].SetCalInfo(calNum, mdacNum), true);
                         mdacNum--;
                         calNum = 0;
                     }
                 } // End loop over MDACs
-                chipControl1.Update(() => chipControl1.adcs[channelNum].Deactivate());
+                chipControl1.Update(() => chipControl1.adcs[channelNum].Deactivate(), true);
                 // calculate and store calibration constants
                 GetConst(channelNum);
                 // Send calibration constants to the chip
@@ -154,7 +155,7 @@ namespace Nevis14 {
                 // Check that calibration constants match the numbers on the chip
                 Console.WriteLine("check channel " + channelNum);
                 bool success = CheckCalibration(channelNum);
-                chipControl1.Update(() => chipControl1.adcs[channelNum].IsCalibrated(success));
+                chipControl1.Update(() => chipControl1.adcs[channelNum].IsCalibrated(success), true);
 
                 // Get ready for next channel
                 //if (!success) { e.Result = false; return false; }
@@ -560,16 +561,17 @@ namespace Nevis14 {
             GetAdcData(12400);
             if (bufferA.Count != 12400 * 8) { Console.WriteLine(bufferA.Count); return false; }
 
-            //WriteDataToGui(bufferA);
+            WriteDataToGui(bufferA);
 
             StreamWriter adcwrite = new StreamWriter(filePath + "adcData.txt");
+            StringBuilder s = new StringBuilder("", bufferA.Count * 3);
             for (int i = 0; i < bufferA.Count; i += 8) {
-                string s = "";
                 for (int j = 0; j < 8; j += 2) {
-                    s += ((bufferA[i + j] << 8) + bufferA[i + j + 1]) + " ";
+                    s.Append(((bufferA[i + j] << 8) + bufferA[i + j + 1]) + " ");
                 }
-                adcwrite.WriteLine(s);
+                s.Append(Environment.NewLine);
             }
+            adcwrite.Write(s);
             adcwrite.Close();
 
             //System.IO.File.AppendAllText(filePath + "adcData.txt", s);
@@ -643,15 +645,15 @@ namespace Nevis14 {
             // (b.c. there are 4 channels on the chip and there are 2 bytes per channel)
             if (data.Count % 8 != 0) throw new Exception("Data size is not a multiple of 8");
 
-            string s = Environment.NewLine;
+            StringBuilder s = new StringBuilder(Environment.NewLine, data.Count * 3);
             for (int i = 0; i < data.Count; i += 8) {
                 for (int j = 0; j < 8; j += 2) {
-                    s += ((data[i + j] << 8) + data[i + j + 1]) + " ";
+                    s.Append(((data[i + j] << 8) + data[i + j + 1]) + " ");
                 }
-                s += Environment.NewLine;
+                s.Append(Environment.NewLine);
             }
 
-            dataBox.Update(() => dataBox.AppendText(s));
+            dataBox.Update(() => dataBox.AppendText(s.ToString()));
             //System.IO.File.AppendAllText(filePath + "adcData.txt",
             //    Environment.NewLine + System.DateTime.Now);
             //System.IO.File.AppendAllText(filePath + "adcData.txt", s);
@@ -660,13 +662,13 @@ namespace Nevis14 {
         // Parses commands and writes them to the command box (upper left on GUI)
         private void WriteCommandToGui (string port, List<byte> data) {
 
-            string s = "";
+            StringBuilder s = new StringBuilder("", data.Count * 3);
             using (StreamWriter commandsout = File.AppendText(filePath + "commands.log"))
             {
                 commandsout.Write(Environment.NewLine + port + " ");
                 for (int i = 0; i < data.Count; i++)
                 {
-                    s += Global.NumberToString((uint)data[i], 16, 2) + " ";
+                    s.Append(Global.NumberToString((uint)data[i], 16, 2) + " ");
                 }
                 commandsout.Write(s);
             };
@@ -739,7 +741,9 @@ namespace Nevis14 {
             if (!TakeData()) { e.Result = false; Console.WriteLine("Error Taking Data"); return; }
 
             Console.WriteLine("Data Taken");
+            fftTime.Start();
             AdcData[] adcData = FFT3(10, chipdata);
+            fftTime.Stop();
             if (adcData == null) throw new Exception("No data returned from FFT3.");
             WriteDataToFile();
             WriteResult(adcData);
@@ -748,6 +752,7 @@ namespace Nevis14 {
             Console.WriteLine(String.Format("{0} spent on 'DoCalWork' ({1}%)", docaltime.Elapsed, 100 * docaltime.ElapsedMilliseconds / totaltime.ElapsedMilliseconds));
             Console.WriteLine(String.Format("{0} spent on 'SendCalibContent' ({1}%)", sendcalibcont.Elapsed, 100 * sendcalibcont.ElapsedMilliseconds / totaltime.ElapsedMilliseconds));
             Console.WriteLine(String.Format("{0} spent on 'GetADC' in calibration ({1}%)", getadccalib.Elapsed, 100 * getadccalib.ElapsedMilliseconds / totaltime.ElapsedMilliseconds));
+            Console.WriteLine(String.Format("{0} spent on 'FFT3' ({1}%)", fftTime.Elapsed, 100 * fftTime.ElapsedMilliseconds / totaltime.ElapsedMilliseconds));
             e.Result = true;
             
         } // End bkgWorker_DoWork
@@ -791,7 +796,7 @@ namespace Nevis14 {
                 resultBox.Update(() => resultBox.Text += "Channel " + (i + 1) 
                     + Environment.NewLine + "   ENOB = " + Math.Round(adcData[i].enob,4)
                     + Environment.NewLine + "   Range = " + chipControl1.adcs[i].dynamicRange 
-                    + Environment.NewLine);
+                    + Environment.NewLine, true);
             }
             if (!underperf && !defect) {
                 resultBox.Update(() => { resultBox.BackColor = Color.Green; 
