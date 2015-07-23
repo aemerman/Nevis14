@@ -203,7 +203,7 @@ namespace Nevis14 {
                     default:
                         throw new Exception("nothing to be done for calNum " + calNum);
                 }
-            });
+            }, true);
         }   // End SetCalInfo
         public List<byte> GetMdacControl () {
             var calib = new byte[4];
@@ -325,7 +325,7 @@ namespace Nevis14 {
             get { return this._disable; }
             set {
                 this._disable = value;
-                this.Update(() => this.Enabled = !(value > 0)); // if disable = 1, then Enabled = false
+                this.Update(() => this.Enabled = !(value > 0), true); // if disable = 1, then Enabled = false
             }
         }
 

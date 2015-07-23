@@ -63,18 +63,30 @@ namespace Nevis14 {
     public static class MyExtensionMethods {
 
         // Perform the action, invoking it on the control's owner thread if necessary
+        public static void SafeInvokeAsync (this System.ComponentModel.ISynchronizeInvoke control,
+            Action action) {
+            if (control.InvokeRequired) {
+                control.BeginInvoke(action, null);
+            } else {
+                action();
+            }
+        }
         public static void SafeInvoke (this System.ComponentModel.ISynchronizeInvoke control,
             Action action) {
             if (control.InvokeRequired) {
-                //Console.WriteLine("Invoking " + control.ToString() + " " + action.ToString());
-                control.Invoke(new Action(() => action()), null);
+                // Wait for action to return
+                control.Invoke(action, null);
             } else {
                 action();
             }
         }
         // Call SafeInvoke, then update the GUI
-        public static void Update (this Control control, Action action) {
-            control.SafeInvoke(() => { action(); control.Update(); });
+        public static void Update (this Control control, Action action, bool synchronous = false) {
+            if (synchronous) {
+                control.SafeInvoke(() => { action(); control.Update(); });
+            } else {
+                control.SafeInvokeAsync(() => { action(); control.Update(); });
+            }
         }
     }
 }
