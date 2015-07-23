@@ -184,7 +184,7 @@ namespace Nevis14 {
             //----Write QA data to file----
             for (int isig = 0; isig < 4; isig++)
             {
-                chipdata[isig + 1] = adcData[isig].Print();
+                chipdata[isig + 1] += adcData[isig].Print();
             }
 
             Console.WriteLine(String.Format("Full FFT3 Took {0} Seconds", (DateTime.Now - start).TotalSeconds));
