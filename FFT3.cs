@@ -36,6 +36,8 @@ namespace Nevis14 {
 
         public AdcData[] FFT3(double freq, string[] chipdata)
         {
+            DateTime time;
+            DateTime start = DateTime.Now;
             chart1 = new Chart();
             chart1.Size = new System.Drawing.Size(1000, 1000);
 
@@ -59,7 +61,10 @@ namespace Nevis14 {
             }
 
             initializeChart();
+
+            time = DateTime.Now;
             double[][] signalHisto = readData();
+            Console.WriteLine(String.Format("Reading Data Took {0} Seconds", (DateTime.Now - time).TotalSeconds));
 
             formatChart("sig");
             chart1.SaveImage(filePath + "signal.png", ChartImageFormat.Png);
@@ -95,7 +100,6 @@ namespace Nevis14 {
                 bin1 = fourierHisto[0];         // bin1 has the largest value, however
                 fourierHisto[0] = 0;            // that isn't actually part of our data.
                 fourierHisto[sampLength / 2] = 0;
-                Console.Write(String.Format("DC Component {0} = {1}\n", isig, bin1));
                 binMax = fourierHisto.Max();        // The max value, our signal, is actually
                 fourierHisto[0] = bin1;             // the second largest value, now in binMax.
 
@@ -174,14 +178,16 @@ namespace Nevis14 {
 
             formatChart("FFT");
             addDataToChart(adcData);
-            chart1.SaveImage(filePath + "fft.png", ChartImageFormat.Png); // Save the FFT Charts to OUTPUTIN
             chart1.Size = new Size(690, 595);
+            chart1.SaveImage(filePath + "fft.png", ChartImageFormat.Png); // Save the FFT Charts to OUTPUTIN
 
             //----Write QA data to file----
             for (int isig = 0; isig < 4; isig++)
             {
                 chipdata[isig + 1] = adcData[isig].Print();
             }
+
+            Console.WriteLine(String.Format("Full FFT3 Took {0} Seconds", (DateTime.Now - start).TotalSeconds));
 
             return adcData;
         }
@@ -376,6 +382,8 @@ namespace Nevis14 {
         private double[][] readData()
         {
             double[][] signalHisto = new double[4][];
+            for (int isig = 0; isig < 4; isig++)
+                signalHisto[isig] = new double[sampLength];
 
             System.IO.StreamReader file = null;
             string adcDataFile = filePath + "adcData.txt";
