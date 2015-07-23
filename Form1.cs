@@ -244,7 +244,7 @@ namespace Nevis14 {
                             totMdac[j] += 2;
                             break;
                         default:
-                            throw new Exception("mdac" + j + " is invalid");
+                            throw new Exception("Substring " + thisMdac[j] + " sent to mdac " + j + " is invalid.");
                     }
                 }
             } // End loop over samples
