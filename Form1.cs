@@ -756,7 +756,7 @@ namespace Nevis14 {
             bool underperf = false;
             bool defect = false;
             for (int i = 0; i < 4; i++) {
-                if (adcData[i].enob < (enobBound * 0.9) || (1 - chipControl1.adcs[i].dynamicRange / 4096) < calBound) 
+                if (adcData[i].enob < (enobBound * 0.9) || (1 - chipControl1.adcs[i].dynamicRange / 4096.0) < calBound) 
                     defect = true;
                 else if (adcData[i].enob < enobBound)
                     underperf = true;
