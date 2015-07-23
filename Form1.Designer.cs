@@ -1,4 +1,4 @@
-﻿namespace Nevis14 {
+namespace Nevis14 {
     partial class Form1 {
         /// <summary>
         /// Required designer variable.
@@ -25,15 +25,16 @@
         private void InitializeComponent () {
             this.runButton = new System.Windows.Forms.Button();
             this.commandBox = new System.Windows.Forms.TextBox();
+            this.progressBar1 = new System.Windows.Forms.ProgressBar();
             this.bkgWorker = new System.ComponentModel.BackgroundWorker();
             this.cancelButton = new System.Windows.Forms.Button();
             this.dataBox = new System.Windows.Forms.TextBox();
             this.chipNumBox = new System.Windows.Forms.MaskedTextBox();
             this.chipNumLabel = new System.Windows.Forms.Label();
-            this.fftBox = new System.Windows.Forms.PictureBox();
-            this.resultBox = new System.Windows.Forms.TextBox();
+            this.pictureBox1 = new System.Windows.Forms.PictureBox();
             this.chipControl1 = new Nevis14.ChipControl();
-            ((System.ComponentModel.ISupportInitialize)(this.fftBox)).BeginInit();
+            this.resultBox = new System.Windows.Forms.TextBox();
+            ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.SuspendLayout();
             // 
             // runButton
@@ -56,10 +57,19 @@
             this.commandBox.Size = new System.Drawing.Size(385, 130);
             this.commandBox.TabIndex = 1;
             // 
+            // progressBar1
+            // 
+            this.progressBar1.Location = new System.Drawing.Point(10, 747);
+            this.progressBar1.Name = "progressBar1";
+            this.progressBar1.Size = new System.Drawing.Size(980, 20);
+            this.progressBar1.TabIndex = 2;
+            // 
             // bkgWorker
             // 
+            this.bkgWorker.WorkerReportsProgress = true;
             this.bkgWorker.WorkerSupportsCancellation = true;
             this.bkgWorker.DoWork += new System.ComponentModel.DoWorkEventHandler(this.bkgWorker_DoWork);
+            this.bkgWorker.ProgressChanged += new System.ComponentModel.ProgressChangedEventHandler(this.bkgWorker_ProgressChanged);
             this.bkgWorker.RunWorkerCompleted += new System.ComponentModel.RunWorkerCompletedEventHandler(this.bkgWorker_RunWorkerCompleted);
             // 
             // cancelButton
@@ -85,7 +95,7 @@
             // 
             this.chipNumBox.Location = new System.Drawing.Point(105, 10);
             this.chipNumBox.Name = "chipNumBox";
-            this.chipNumBox.Size = new System.Drawing.Size(85, 29);
+            this.chipNumBox.Size = new System.Drawing.Size(85, 22);
             this.chipNumBox.TabIndex = 7;
             this.chipNumBox.ValidatingType = typeof(int);
             this.chipNumBox.TypeValidationCompleted += new System.Windows.Forms.TypeValidationEventHandler(this.chipNumBox_TypeValidationCompleted);
@@ -100,23 +110,14 @@
             this.chipNumLabel.Text = "Chip No:";
             this.chipNumLabel.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             // 
-            // fftBox
+            // pictureBox1
             // 
-            this.fftBox.Location = new System.Drawing.Point(300, 145);
-            this.fftBox.Name = "fftBox";
-            this.fftBox.Size = new System.Drawing.Size(690, 595);
-            this.fftBox.TabIndex = 9;
-            this.fftBox.TabStop = false;
-            // 
-            // resultBox
-            // 
-            this.resultBox.Font = new System.Drawing.Font("Consolas", 12F, System.Drawing.FontStyle.Bold);
-            this.resultBox.Location = new System.Drawing.Point(10, 530);
-            this.resultBox.Multiline = true;
-            this.resultBox.Name = "resultBox";
-            this.resultBox.ReadOnly = true;
-            this.resultBox.Size = new System.Drawing.Size(280, 210);
-            this.resultBox.TabIndex = 10;
+            this.pictureBox1.Location = new System.Drawing.Point(300, 145);
+            this.pictureBox1.Name = "pictureBox1";
+            this.pictureBox1.Size = new System.Drawing.Size(690, 595);
+            this.pictureBox1.TabIndex = 9;
+            this.pictureBox1.TabStop = false;
+            this.pictureBox1.Click += new System.EventHandler(this.pictureBox1_Click);
             // 
             // chipControl1
             // 
@@ -129,24 +130,34 @@
             this.chipControl1.slvsControl = ((uint)(0u));
             this.chipControl1.TabIndex = 3;
             // 
+            // resultBox
+            // 
+            this.resultBox.Location = new System.Drawing.Point(10, 531);
+            this.resultBox.Multiline = true;
+            this.resultBox.Name = "resultBox";
+            this.resultBox.ReadOnly = true;
+            this.resultBox.Size = new System.Drawing.Size(281, 210);
+            this.resultBox.TabIndex = 10;
+            // 
             // Form1
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(10F, 22F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 14F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(1000, 750);
+            this.ClientSize = new System.Drawing.Size(1000, 779);
             this.Controls.Add(this.resultBox);
-            this.Controls.Add(this.fftBox);
+            this.Controls.Add(this.pictureBox1);
             this.Controls.Add(this.chipNumLabel);
             this.Controls.Add(this.chipNumBox);
             this.Controls.Add(this.dataBox);
             this.Controls.Add(this.cancelButton);
             this.Controls.Add(this.chipControl1);
+            this.Controls.Add(this.progressBar1);
             this.Controls.Add(this.commandBox);
             this.Controls.Add(this.runButton);
             this.Font = new System.Drawing.Font("Consolas", 9F);
             this.Name = "Form1";
             this.Text = "Nevis14 Test Interface";
-            ((System.ComponentModel.ISupportInitialize)(this.fftBox)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -156,13 +167,14 @@
 
         private System.Windows.Forms.Button runButton;
         private System.Windows.Forms.TextBox commandBox;
+        private System.Windows.Forms.ProgressBar progressBar1;
         private System.ComponentModel.BackgroundWorker bkgWorker;
         private ChipControl chipControl1;
         private System.Windows.Forms.Button cancelButton;
         private System.Windows.Forms.TextBox dataBox;
         private System.Windows.Forms.MaskedTextBox chipNumBox;
         private System.Windows.Forms.Label chipNumLabel;
-        private System.Windows.Forms.PictureBox fftBox;
+        private System.Windows.Forms.PictureBox pictureBox1;
         private System.Windows.Forms.TextBox resultBox;
     }
 }
