@@ -699,7 +699,7 @@ namespace Nevis14 {
             // Normally the RunWorkerCompleted method would handle exceptions, but
             // that doesn't work in the debugger. Will the undergrads be using a
             // release version?
-            chipdata[0] = String.Format("* {0} --- {1} --- ", chipNumBox.Text, DateTime.Now);
+            chipdata[0] = String.Format("* {0}, {1},{2}, ", chipNumBox.Text, DateTime.Now.Date, DateTime.Now.TimeOfDay);
             // Create folder to store output files, if it doesn't already exist
             if (!System.IO.Directory.Exists(filePath)) {
                 System.IO.Directory.CreateDirectory(filePath);
