@@ -1,0 +1,23 @@
+
+B WR ff fe 01 22 00 00 ff 
+B WR ff fe 01 22 00 40 ff 
+B WR ff fe 01 22 00 00 ff 
+B WR ff fe 01 22 00 80 ff 
+A    5a f4 80 a0 36 00 85 08 10 00 00 5a f4 80 a0 34 3a f1 dd 0f 20 7c 5a f4 80 a0 35 75 e3 ba 1e 40 f8 00 
+B WR ff fe 00 00 00 01 ff 
+B RD ff fe 01 22 00 98 ff 
+B WR ff fe 00 00 00 00 ff 
+B WR ff fe 00 00 00 04 ff 
+B WR ff fe 03 b8 0b 00 ff 
+B WR ff fe 03 b8 0b 40 ff 
+B WR ff fe 01 22 00 00 ff 
+B WR ff fe 01 22 00 40 ff 
+B WR ff fe 01 22 00 00 ff 
+B WR ff fe 01 22 00 80 ff 
+A    5a f4 80 a0 36 00 85 08 10 00 00 5a f4 80 a0 34 3a f1 dd 0f 20 7c 5a f4 80 a0 35 75 e3 ba 1e 40 f8 00 
+B WR ff fe 00 00 00 01 ff 
+B RD fe 01 22 00 90 ff 
+B WR ff fe 00 00 00 00 ff 
+B WR ff fe 00 00 00 04 ff 
+B WR ff fe 03 b8 0b 00 ff 
+B WR ff fe 03 b8 0b 40 ff 

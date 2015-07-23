@@ -1,0 +1,25 @@
+
+7/23/2015 10:22:46 AM
+MDAC reading in channel 1
+MDAC[4] corr0: 123	 corr1: 246
+MDAC[3] corr0: 240	 corr1: 480
+MDAC[2] corr0: 474	 corr1: 948
+MDAC[1] corr0: 935	 corr1: 1870
+7/23/2015 10:22:53 AM
+MDAC reading in channel 2
+MDAC[4] corr0: 123	 corr1: 246
+MDAC[3] corr0: 240	 corr1: 480
+MDAC[2] corr0: 474	 corr1: 948
+MDAC[1] corr0: 935	 corr1: 1870
+7/23/2015 10:22:59 AM
+MDAC reading in channel 3
+MDAC[4] corr0: 122	 corr1: 244
+MDAC[3] corr0: 238	 corr1: 476
+MDAC[2] corr0: 471	 corr1: 942
+MDAC[1] corr0: 929	 corr1: 1858
+7/23/2015 10:23:05 AM
+MDAC reading in channel 4
+MDAC[4] corr0: 122	 corr1: 244
+MDAC[3] corr0: 239	 corr1: 478
+MDAC[2] corr0: 472	 corr1: 944
+MDAC[1] corr0: 930	 corr1: 1860

@@ -545,7 +545,7 @@ namespace Nevis14 {
                
                 // Check the dynamic range of the channel, if more than calBound% of the counts
                 // are lost then the chip is defective
-                chipControl1.adcs[iCh].dynamicRange = corr[0] + corr[2] + corr[4] + corr[6] + 128;
+                chipControl1.adcs[iCh].dynamicRange = corr[0] + corr[2] + corr[4] + corr[6] + 255;
                 Console.WriteLine("Dynamic range of chip is: " + chipControl1.adcs[iCh].dynamicRange);
                 return ((1 - (chipControl1.adcs[iCh].dynamicRange / 4096.0)) < calBound);
             }
@@ -705,8 +705,9 @@ namespace Nevis14 {
                 System.IO.Directory.CreateDirectory(filePath);
                 System.IO.Directory.CreateDirectory(filePath + "Run00/");
                 filePath += "Run00/";
+                chipdata[0] += "0";
             } else {
-                int run = 0;
+                int run = 1;
                 string runFolder = filePath + "Run" + Convert.ToString(run).PadLeft(2, '0');
                 while (System.IO.Directory.Exists(runFolder)) {
                     run++;
@@ -745,8 +746,8 @@ namespace Nevis14 {
             totaltime.Stop();
             Console.WriteLine(String.Format("{0} elapsed for full calibration ({1}%)", fullcalib.Elapsed, 100 * fullcalib.ElapsedMilliseconds / totaltime.ElapsedMilliseconds));
             Console.WriteLine(String.Format("{0} spent on 'DoCalWork' ({1}%)", docaltime.Elapsed, 100 * docaltime.ElapsedMilliseconds / totaltime.ElapsedMilliseconds));
-            Console.WriteLine(String.Format("{0} spent on 'DoCalWork' ({1}%)", sendcalibcont.Elapsed, 100 * sendcalibcont.ElapsedMilliseconds / totaltime.ElapsedMilliseconds));
-            Console.WriteLine(String.Format("{0} spent on 'DoCalWork' ({1}%)", getadccalib.Elapsed, 100 * getadccalib.ElapsedMilliseconds / totaltime.ElapsedMilliseconds));
+            Console.WriteLine(String.Format("{0} spent on 'SendCalibContent' ({1}%)", sendcalibcont.Elapsed, 100 * sendcalibcont.ElapsedMilliseconds / totaltime.ElapsedMilliseconds));
+            Console.WriteLine(String.Format("{0} spent on 'GetADC' in calibration ({1}%)", getadccalib.Elapsed, 100 * getadccalib.ElapsedMilliseconds / totaltime.ElapsedMilliseconds));
             e.Result = true;
             
         } // End bkgWorker_DoWork
@@ -783,7 +784,7 @@ namespace Nevis14 {
             bool underperf = false;
             bool defect = false;
             for (int i = 0; i < 4; i++) {
-                if (adcData[i].enob < (enobBound * 0.9) || (1 - chipControl1.adcs[i].dynamicRange / 4096) < calBound) 
+                if (adcData[i].enob < (enobBound * 0.9) || (1 - chipControl1.adcs[i].dynamicRange / 4096.0) > calBound) 
                     defect = true;
                 else if (adcData[i].enob < enobBound)
                     underperf = true;

@@ -32,8 +32,8 @@
             this.chipNumLabel = new System.Windows.Forms.Label();
             this.fftBox = new System.Windows.Forms.PictureBox();
             this.resultBox = new System.Windows.Forms.TextBox();
-            this.chipControl1 = new Nevis14.ChipControl();
             this.commandCheckBox = new System.Windows.Forms.CheckBox();
+            this.chipControl1 = new Nevis14.ChipControl();
             ((System.ComponentModel.ISupportInitialize)(this.fftBox)).BeginInit();
             this.SuspendLayout();
             // 
@@ -111,13 +111,23 @@
             // 
             // resultBox
             // 
-            this.resultBox.Font = new System.Drawing.Font("Consolas", 12F, System.Drawing.FontStyle.Bold);
+            this.resultBox.Font = new System.Drawing.Font("Consolas", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.resultBox.Location = new System.Drawing.Point(10, 530);
             this.resultBox.Multiline = true;
             this.resultBox.Name = "resultBox";
             this.resultBox.ReadOnly = true;
             this.resultBox.Size = new System.Drawing.Size(280, 210);
             this.resultBox.TabIndex = 10;
+            // 
+            // commandCheckBox
+            // 
+            this.commandCheckBox.AutoSize = true;
+            this.commandCheckBox.Location = new System.Drawing.Point(605, 17);
+            this.commandCheckBox.Name = "commandCheckBox";
+            this.commandCheckBox.Size = new System.Drawing.Size(215, 18);
+            this.commandCheckBox.TabIndex = 11;
+            this.commandCheckBox.Text = "Print commands sent to chip";
+            this.commandCheckBox.UseVisualStyleBackColor = true;
             // 
             // chipControl1
             // 
@@ -129,16 +139,6 @@
             this.chipControl1.Size = new System.Drawing.Size(400, 135);
             this.chipControl1.slvsControl = ((uint)(0u));
             this.chipControl1.TabIndex = 3;
-            // 
-            // commandCheckBox
-            // 
-            this.commandCheckBox.AutoSize = true;
-            this.commandCheckBox.Location = new System.Drawing.Point(605, 17);
-            this.commandCheckBox.Name = "commandCheckBox";
-            this.commandCheckBox.Size = new System.Drawing.Size(215, 18);
-            this.commandCheckBox.TabIndex = 11;
-            this.commandCheckBox.Text = "Print commands sent to chip";
-            this.commandCheckBox.UseVisualStyleBackColor = true;
             // 
             // Form1
             // 
