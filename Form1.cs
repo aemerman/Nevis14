@@ -1,8 +1,9 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -78,8 +79,14 @@ namespace Nevis14 {
 
         Ftdi ftdi;
 
+        Stopwatch fullcalib = new Stopwatch();
+        Stopwatch docaltime = new Stopwatch();
+        Stopwatch sendcalibcont = new Stopwatch();
+        Stopwatch getadccalib = new Stopwatch();
+        Stopwatch totaltime = new Stopwatch();
+
         // begin functions
-        public Form1 () {
+        public Form1 () { 
             InitializeComponent();
         } // End constructor 
 
@@ -128,8 +135,9 @@ namespace Nevis14 {
                 chipControl1.Update(() => chipControl1.Activate((uint) channelNum));
                 while (mdacNum >= 0) {
                     if (bw.CancellationPending) { e.Cancel = true; return false; }
-
+                    docaltime.Start();
                     if (!DoCalWork(ref chipControl1.adcs[channelNum], calNum, mdacNum)) return false;
+                    docaltime.Stop();
                     calNum++;
                     if (calNum == 4) {
                         chipControl1.Update(() => chipControl1.adcs[channelNum].SetCalInfo(calNum, mdacNum));
@@ -177,8 +185,14 @@ namespace Nevis14 {
             double[] totMdac = new double[4] { 0, 0, 0, 0 };
 
             adc.SetCalInfo(calNum, mdacNum);
+
+            sendcalibcont.Start();
             SendCalibControl(adc.GetChannel());
+            sendcalibcont.Stop();
+
+            getadccalib.Start();
             GetAdcData(samplesForCalib);
+            getadccalib.Stop();
             // If the buffer is not full, then retry up to two times
             if (bufferA.Count != samplesForCalib * 8) {
                 Console.WriteLine(Environment.NewLine + "Retrying MDAC: " + (mdacNum + 1) + " calnum: " + calNum
@@ -546,15 +560,19 @@ namespace Nevis14 {
             GetAdcData(12400);
             if (bufferA.Count != 12400 * 8) { Console.WriteLine(bufferA.Count); return false; }
 
-            WriteDataToGui(bufferA);
-            string s = "";
+            //WriteDataToGui(bufferA);
+
+            StreamWriter adcwrite = new StreamWriter(filePath + "adcData.txt");
             for (int i = 0; i < bufferA.Count; i += 8) {
+                string s = "";
                 for (int j = 0; j < 8; j += 2) {
                     s += ((bufferA[i + j] << 8) + bufferA[i + j + 1]) + " ";
                 }
-                s += "\r\n";
+                adcwrite.WriteLine(s);
             }
-            System.IO.File.AppendAllText(filePath + "adcData.txt", s);
+            adcwrite.Close();
+
+            //System.IO.File.AppendAllText(filePath + "adcData.txt", s);
             return true;
         } // End TakeData
 
@@ -641,22 +659,23 @@ namespace Nevis14 {
 
         // Parses commands and writes them to the command box (upper left on GUI)
         private void WriteCommandToGui (string port, List<byte> data) {
+
             string s = "";
-
-            for (int i = 0; i < data.Count; i++) {
-                s += Global.NumberToString((uint) data[i], 16, 2) + " ";
-            }
-
-            commandBox.Update(() => {
-                // Keep 100 lines at a time in the text box
-                if (commandBox.Lines.Length > 100) {
-                    commandBox.Lines = commandBox.Lines.ToList().Skip(1).ToArray();
+            using (StreamWriter commandsout = File.AppendText(filePath + "commands.log"))
+            {
+                commandsout.Write(Environment.NewLine + port + " ");
+                for (int i = 0; i < data.Count; i++)
+                {
+                    s += Global.NumberToString((uint)data[i], 16, 2) + " ";
                 }
+                commandsout.Write(s);
+            };
 
-                commandBox.AppendText(Environment.NewLine + port + " " + s);
-            });
-            System.IO.File.AppendAllText(filePath + "commands.log",
-                Environment.NewLine + port + " " + s);
+            if (commandCheckBox.Checked)
+                commandBox.Update(() => commandBox.AppendText(Environment.NewLine + port + " " + s));
+
+            /*System.IO.File.AppendAllText(filePath + "commands.log",
+                Environment.NewLine + port + " " + s);*/
         } // End WriteCommandToGui
 
         private void runButton_Click (object sender, EventArgs e) {
@@ -676,6 +695,7 @@ namespace Nevis14 {
 
         private void bkgWorker_DoWork (object sender, DoWorkEventArgs e) {
             BackgroundWorker thisWorker = sender as BackgroundWorker;
+            totaltime.Start();
             // Normally the RunWorkerCompleted method would handle exceptions, but
             // that doesn't work in the debugger. Will the undergrads be using a
             // release version?
@@ -685,8 +705,9 @@ namespace Nevis14 {
                 System.IO.Directory.CreateDirectory(filePath);
                 System.IO.Directory.CreateDirectory(filePath + "Run00/");
                 filePath += "Run00/";
+                chipdata[0] += "0";
             } else {
-                int run = 0;
+                int run = 1;
                 string runFolder = filePath + "Run" + Convert.ToString(run).PadLeft(2, '0');
                 while (System.IO.Directory.Exists(runFolder)) {
                     run++;
@@ -706,13 +727,15 @@ namespace Nevis14 {
             }
 
             //SeeTest(5);
-            
+            fullcalib.Start();
             if (!DoCalibration(thisWorker, e)) { e.Result = false; return; }
+            fullcalib.Stop();
 
+            totaltime.Stop();
             DialogResult answer = MessageBox.Show("Finished calibrating. Please turn on the waveform generator.",
                 "", MessageBoxButtons.OKCancel);
             if (answer == DialogResult.Cancel) { e.Cancel = true; return; }
-
+            totaltime.Start();
             if (!TakeData()) { e.Result = false; Console.WriteLine("Error Taking Data"); return; }
 
             Console.WriteLine("Data Taken");
@@ -720,6 +743,11 @@ namespace Nevis14 {
             if (adcData == null) throw new Exception("No data returned from FFT3.");
             WriteDataToFile();
             WriteResult(adcData);
+            totaltime.Stop();
+            Console.WriteLine(String.Format("{0} elapsed for full calibration ({1}%)", fullcalib.Elapsed, 100 * fullcalib.ElapsedMilliseconds / totaltime.ElapsedMilliseconds));
+            Console.WriteLine(String.Format("{0} spent on 'DoCalWork' ({1}%)", docaltime.Elapsed, 100 * docaltime.ElapsedMilliseconds / totaltime.ElapsedMilliseconds));
+            Console.WriteLine(String.Format("{0} spent on 'SendCalibContent' ({1}%)", sendcalibcont.Elapsed, 100 * sendcalibcont.ElapsedMilliseconds / totaltime.ElapsedMilliseconds));
+            Console.WriteLine(String.Format("{0} spent on 'GetADC' in calibration ({1}%)", getadccalib.Elapsed, 100 * getadccalib.ElapsedMilliseconds / totaltime.ElapsedMilliseconds));
             e.Result = true;
             
         } // End bkgWorker_DoWork
@@ -756,13 +784,14 @@ namespace Nevis14 {
             bool underperf = false;
             bool defect = false;
             for (int i = 0; i < 4; i++) {
-                if (adcData[i].enob < (enobBound * 0.9) || (1 - chipControl1.adcs[i].dynamicRange / 4096.0) < calBound) 
+                if (adcData[i].enob < (enobBound * 0.9) || (1 - chipControl1.adcs[i].dynamicRange / 4096.0) > calBound)  
                     defect = true;
                 else if (adcData[i].enob < enobBound)
                     underperf = true;
                 resultBox.Update(() => resultBox.Text += "Channel " + (i + 1) 
                     + Environment.NewLine + "   ENOB = " + Math.Round(adcData[i].enob,4)
-                    + Environment.NewLine + "   Range = " + chipControl1.adcs[i].dynamicRange);
+                    + Environment.NewLine + "   Range = " + chipControl1.adcs[i].dynamicRange 
+                    + Environment.NewLine);
             }
             if (!underperf && !defect) {
                 resultBox.Update(() => { resultBox.BackColor = Color.Green; 
