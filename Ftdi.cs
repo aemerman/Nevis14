@@ -8,6 +8,8 @@ using System.Windows.Forms;
 
 namespace Nevis14 {
     // This file contains functions that allow reading/writing to the FTDIs
+    // Note: portA and portB are used as lock objects for the WriteToChip
+    // and ReadFromChip functions. Do not use them as locks elsewhere.
     public class Ftdi {
         public FTDI portA, portB;
         private string portADescription, portBDescription;
@@ -23,7 +25,7 @@ namespace Nevis14 {
             Open(portA, portADescription);
             Open(portB, portBDescription);
             isOpen = true;
-        } // end constructor
+        } // End constructor
 
         private void Open (FTDI port, string description) {
             uint deviceCount = 0;
@@ -73,7 +75,13 @@ namespace Nevis14 {
             if ((ftStatus = port.OpenByIndex((uint) foundIndex)) != FTDI.FT_STATUS.FT_OK) {
                 throw new FTDI.FT_EXCEPTION("Failed to open device. err: " + ftStatus.ToString());
             }
-        } // end Open
+        } // End Open
+
+        public void Close () {
+            isOpen = false;
+            portA.Close();
+            portB.Close();
+        } // End Close
 
         public void WriteToChip (char portName, List<byte> data) {
             if (!isOpen) throw new Exception("Ftdi not initialized");
@@ -86,74 +94,93 @@ namespace Nevis14 {
                 dataReverse.InsertRange(0, data);
                 dataReverse.Reverse();
 
-                while (bytesWaiting > 0) {
-                    System.Threading.Thread.Sleep(20);
-                    //Console.WriteLine("shh... sleeping");
+                lock (portA) {
+                    if ((ftStatus = this.portA.GetTxBytesWaiting(ref bytesWaiting)) != FTDI.FT_STATUS.FT_OK) {
+                        throw new FTDI.FT_EXCEPTION("Failed to get number of bytes waiting from port B. err: "
+                            + ftStatus.ToString());
+                    }
+                    // Uncomment the following lines if you add multi-threading capability.
+                    // If only one thread can read/write to the chip this will loop indefinitely.
+                    /*while (bytesWaiting > 0) {
+                        System.Threading.Monitor.Wait(portA);
+                        if ((ftStatus = this.portA.GetTxBytesWaiting(ref bytesWaiting)) != FTDI.FT_STATUS.FT_OK) {
+                            throw new FTDI.FT_EXCEPTION("Failed to get number of bytes waiting from port A. err: "
+                                + ftStatus.ToString());
+                        }
+                    } */
+                    if ((ftStatus = this.portA.Write(dataReverse.ToArray(), data.Count, ref bytesWritten))
+                        != FTDI.FT_STATUS.FT_OK) {
+                        throw new FTDI.FT_EXCEPTION("Failed to write to port A. err: " + ftStatus.ToString());
+                    }
+                    // Notify all threads of a change in port status
+                    System.Threading.Monitor.PulseAll(portA);
+                }
+            } else { // end Port A
+                lock (portB) {
                     if ((ftStatus = this.portB.GetTxBytesWaiting(ref bytesWaiting)) != FTDI.FT_STATUS.FT_OK) {
                         throw new FTDI.FT_EXCEPTION("Failed to get number of bytes waiting from port B. err: "
                             + ftStatus.ToString());
-                    } 
-                }
-                if ((ftStatus = this.portA.Write(dataReverse.ToArray(), data.Count, ref bytesWritten))
-                    != FTDI.FT_STATUS.FT_OK) {
-                    throw new FTDI.FT_EXCEPTION("Failed to write to port A. err: " + ftStatus.ToString());
-                }
-            } else { // end Port A
-                while (bytesWaiting > 0) {
-                    System.Threading.Thread.Sleep(20);
-                    //Console.WriteLine("shh... sleeping");
-                    if ((ftStatus = this.portB.GetTxBytesWaiting(ref bytesWaiting)) != FTDI.FT_STATUS.FT_OK) {
-                        throw new FTDI.FT_EXCEPTION("Failed to get number of bytes waiting from port A. err: "
-                            + ftStatus.ToString());
                     }
-                }
+                    // Uncomment the following lines if you add multi-threading capability.
+                    // If only one thread can read/write to the chip this will loop indefinitely.
+                    /*while (bytesWaiting > 0) {
+                        System.Threading.Monitor.Wait(portB);
+                        if ((ftStatus = this.portB.GetTxBytesWaiting(ref bytesWaiting)) != FTDI.FT_STATUS.FT_OK) {
+                            throw new FTDI.FT_EXCEPTION("Failed to get number of bytes waiting from port B. err: "
+                                + ftStatus.ToString());
+                        }
+                    } */
 
-                if ((ftStatus = this.portB.Write(data.ToArray(), data.Count, ref bytesWritten))
-                    != FTDI.FT_STATUS.FT_OK) {
-                    throw new FTDI.FT_EXCEPTION("Failed to write to port B. err: " + ftStatus.ToString());
+                    if ((ftStatus = this.portB.Write(data.ToArray(), data.Count, ref bytesWritten))
+                        != FTDI.FT_STATUS.FT_OK) {
+                        throw new FTDI.FT_EXCEPTION("Failed to write to port B. err: " + ftStatus.ToString());
+                    }
+                    // Notify all threads of a change in port status
+                    System.Threading.Monitor.PulseAll(portB);
                 }
             } // end Port B
 
             if (data.Count != bytesWritten) throw new Exception("Write length mismatch");
-        } // end WriteToChip
+        } // End WriteToChip
 
-        public void ReadFromChip (char portname, ReadFunctionType call) {
-            if (portname != 'A' && portname != 'B') throw new Exception("Invalid port name "
-                + portname + ". Should be A or B.");
-            FTDI rdPort = (portname == 'B') ? portB : portA;
-            if (rdPort == null) throw new Exception("No port " + portname + " exists");
-            if (!rdPort.IsOpen) throw new Exception("Port " + portname + " is closed");
+        public void ReadFromChip (char portName, ReadFunctionType call) {
+            if (portName != 'A' && portName != 'B') throw new Exception("Invalid port name "
+                + portName + ". Should be A or B.");
+            FTDI rdPort = (portName == 'B') ? portB : portA;
+            if (rdPort == null) throw new Exception("No port " + portName + " exists");
+            if (!rdPort.IsOpen) throw new Exception("Port " + portName + " is closed");
 
             uint numBytesAvailable = 0;
             DateTime startClock = DateTime.Now;
-            while (numBytesAvailable <= 0) {
-                // Wait for 2 seconds for data, then throw error
-                if ((DateTime.Now - startClock).TotalSeconds > 2)
-                    throw new Exception("2 seconds elapsed with no data. Was data expected?");
 
-                System.Threading.Thread.Sleep(20);
-                //Console.WriteLine("shh... sleeping");
-                if ((ftStatus = rdPort.GetRxBytesAvailable(ref numBytesAvailable)) != FTDI.FT_STATUS.FT_OK) {
-                    throw new FTDI.FT_EXCEPTION("Failed to get number of available bytes from "
-                        + portname + ". err: " + ftStatus.ToString());
+            lock (rdPort) {
+                // Nothing will be able to write to the chip until ReadFromChip has returned,
+                // is this the desired behaviour?
+                while (numBytesAvailable <= 0) {
+                    // Wait for 2 seconds for data, then throw error
+                    if ((DateTime.Now - startClock).TotalSeconds > 2)
+                        throw new Exception("2 seconds elapsed with no data. Was data expected?");
+
+                    System.Threading.Thread.Sleep(20);
+                    if ((ftStatus = rdPort.GetRxBytesAvailable(ref numBytesAvailable)) != FTDI.FT_STATUS.FT_OK) {
+                        throw new FTDI.FT_EXCEPTION("Failed to get number of available bytes from "
+                            + portName + ". err: " + ftStatus.ToString());
+                    }
                 }
-            }
-            byte[] readData = new byte[numBytesAvailable];
-            uint numBytesRead = 0;
 
-            if ((ftStatus = rdPort.Read(readData, numBytesAvailable, ref numBytesRead)) != FTDI.FT_STATUS.FT_OK) {
-                throw new FTDI.FT_EXCEPTION("Failed to read data from "
-                    + portname + ". err: " + ftStatus.ToString());
-            }
-            if (readData.Length != numBytesRead) throw new Exception("Read length mismatch");
+                byte[] readData = new byte[numBytesAvailable];
+                uint numBytesRead = 0;
 
-            call(portname, readData.ToList());
-        } // end ReadFromChip
-        public void Close()
-        {
-            isOpen = false;
-            portA.Close();
-            portB.Close();
-        } // End Close
-    } // end class
-} // end namespace
+                if ((ftStatus = rdPort.Read(readData, numBytesAvailable, ref numBytesRead)) != FTDI.FT_STATUS.FT_OK) {
+                    throw new FTDI.FT_EXCEPTION("Failed to read data from "
+                        + portName + ". err: " + ftStatus.ToString());
+                }
+                if (readData.Length != numBytesRead) throw new Exception("Read length mismatch");
+
+                call(portName, readData.ToList());
+                // Notify all threads of a change in port status
+                System.Threading.Monitor.PulseAll(rdPort);
+            }
+        } // End ReadFromChip
+    } // End class
+} // End namespace
