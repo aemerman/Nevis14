@@ -682,12 +682,13 @@ namespace Nevis14 {
 
         private void runButton_Click (object sender, EventArgs e) {
             // The background worker will only be started if there is a valid chip number (any int)
+            runButton.Update(() => runButton.Enabled = false);
             if (this.chipNumBox.Text == "" || this.chipNumBox.BackColor == System.Drawing.Color.Red) {
                 MessageBox.Show("Invalid chip id. Please enter the number of the chip you are testing before running the code.");
             } else {
+                ResetGui();
                 filePath += "Nevis14_" + chipNumBox.Text.PadLeft(5, '0') + "/";
                 bkgWorker.RunWorkerAsync();
-                runButton.Update(() => runButton.Enabled = false);
             }
         } // End runButton_Click
 
@@ -813,5 +814,20 @@ namespace Nevis14 {
                 }
             }
         } // End WriteResult
+
+        public void ResetGui()
+        {
+            filePath = Application.StartupPath + "/../../OUTPUT/";
+            for (int i = 0; i < 4; i++)
+            {
+                chipControl1.Update(() => chipControl1.adcs[i].ResetButtonColor());
+            }
+            resultBox.Update(() => { resultBox.Clear(); resultBox.ResetBackColor(); });
+            commandBox.Update(() => commandBox.Clear());
+            dataBox.Update(() => dataBox.Clear());
+            fftBox.Update(() => fftBox.Image = null);
+            if(ftdi != null)
+                ftdi.Close();
+        } // End resetGui
     } // End Form1
 }

@@ -149,5 +149,11 @@ namespace Nevis14 {
 
             call(portname, readData.ToList());
         } // end ReadFromChip
+        public void Close()
+        {
+            isOpen = false;
+            portA.Close();
+            portB.Close();
+        } // End Close
     } // end class
 } // end namespace

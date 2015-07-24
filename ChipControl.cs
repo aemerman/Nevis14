@@ -157,6 +157,11 @@ namespace Nevis14 {
             }
         } // End class myMdac
 
+        public void ResetButtonColor()
+        {
+            this.adcButton.ResetBackColor();
+        }
+
         public uint GetChannel () { return _id - 1; } // End GetChannel
         public void SetCalInfo (int calNum, int mdacNum) {
             if (this.isActive == false) throw new Exception("Trying to modify an inactive ADC");
