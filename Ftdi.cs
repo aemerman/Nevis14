@@ -99,15 +99,14 @@ namespace Nevis14 {
                         throw new FTDI.FT_EXCEPTION("Failed to get number of bytes waiting from port B. err: "
                             + ftStatus.ToString());
                     }
-                    // Uncomment the following lines if you add multi-threading capability.
-                    // If only one thread can read/write to the chip this will loop indefinitely.
-                    /*while (bytesWaiting > 0) {
+                    // If only one thread can read/write to the chip this will wait indefinitely.
+                    while (bytesWaiting > 0) {
                         System.Threading.Monitor.Wait(portA);
                         if ((ftStatus = this.portA.GetTxBytesWaiting(ref bytesWaiting)) != FTDI.FT_STATUS.FT_OK) {
                             throw new FTDI.FT_EXCEPTION("Failed to get number of bytes waiting from port A. err: "
                                 + ftStatus.ToString());
                         }
-                    } */
+                    }
                     if ((ftStatus = this.portA.Write(dataReverse.ToArray(), data.Count, ref bytesWritten))
                         != FTDI.FT_STATUS.FT_OK) {
                         throw new FTDI.FT_EXCEPTION("Failed to write to port A. err: " + ftStatus.ToString());
@@ -121,15 +120,14 @@ namespace Nevis14 {
                         throw new FTDI.FT_EXCEPTION("Failed to get number of bytes waiting from port B. err: "
                             + ftStatus.ToString());
                     }
-                    // Uncomment the following lines if you add multi-threading capability.
-                    // If only one thread can read/write to the chip this will loop indefinitely.
-                    /*while (bytesWaiting > 0) {
+                    // If only one thread can read/write to the chip this will wait indefinitely.
+                    while (bytesWaiting > 0) {
                         System.Threading.Monitor.Wait(portB);
                         if ((ftStatus = this.portB.GetTxBytesWaiting(ref bytesWaiting)) != FTDI.FT_STATUS.FT_OK) {
                             throw new FTDI.FT_EXCEPTION("Failed to get number of bytes waiting from port B. err: "
                                 + ftStatus.ToString());
                         }
-                    } */
+                    }
 
                     if ((ftStatus = this.portB.Write(data.ToArray(), data.Count, ref bytesWritten))
                         != FTDI.FT_STATUS.FT_OK) {
