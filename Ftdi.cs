@@ -8,6 +8,8 @@ using System.Windows.Forms;
 
 namespace Nevis14 {
     // This file contains functions that allow reading/writing to the FTDIs
+    // Note: portA and portB are used as lock objects for the WriteToChip
+    // and ReadFromChip functions. Do not use them as locks elsewhere.
     public class Ftdi {
         public FTDI portA, portB;
         private string portADescription, portBDescription;
@@ -110,6 +112,7 @@ namespace Nevis14 {
                         != FTDI.FT_STATUS.FT_OK) {
                         throw new FTDI.FT_EXCEPTION("Failed to write to port A. err: " + ftStatus.ToString());
                     }
+                    // Notify all threads of a change in port status
                     System.Threading.Monitor.PulseAll(portA);
                 }
             } else { // end Port A
@@ -132,6 +135,7 @@ namespace Nevis14 {
                         != FTDI.FT_STATUS.FT_OK) {
                         throw new FTDI.FT_EXCEPTION("Failed to write to port B. err: " + ftStatus.ToString());
                     }
+                    // Notify all threads of a change in port status
                     System.Threading.Monitor.PulseAll(portB);
                 }
             } // end Port B
@@ -139,34 +143,6 @@ namespace Nevis14 {
             if (data.Count != bytesWritten) throw new Exception("Write length mismatch");
         } // End WriteToChip
 
-        public void WaitForData (char portName, ReadFunctionType call) {
-            if (portName != 'A' && portName != 'B') throw new Exception("Invalid port name "
-                + portName + ". Should be A or B.");
-            FTDI rdPort = (portName == 'B') ? portB : portA;
-            if (rdPort == null) throw new Exception("No port " + portName + " exists");
-            if (!rdPort.IsOpen) throw new Exception("Port " + portName + " is closed");
-
-            uint numBytesAvailable = 0;
-            DateTime startClock = DateTime.Now;
-
-            // Nothing will be able to write to the chip until WaitForData has returned,
-            // is this the desired behaviour?
-            lock (rdPort) {
-                while (numBytesAvailable <= 0) {
-                    // Wait for 2 seconds for data, then throw error
-                    if ((DateTime.Now - startClock).TotalSeconds > 2)
-                        throw new Exception("2 seconds elapsed with no data. Was data expected?");
-
-                    System.Threading.Thread.Sleep(20);
-                    //Console.WriteLine("shh... sleeping");
-                    if ((ftStatus = rdPort.GetRxBytesAvailable(ref numBytesAvailable)) != FTDI.FT_STATUS.FT_OK) {
-                        throw new FTDI.FT_EXCEPTION("Failed to get number of available bytes from "
-                            + portName + ". err: " + ftStatus.ToString());
-                    }
-                }
-                this.ReadFromChip(portName, call);
-            }
-        }
         public void ReadFromChip (char portName, ReadFunctionType call) {
             if (portName != 'A' && portName != 'B') throw new Exception("Invalid port name "
                 + portName + ". Should be A or B.");
@@ -178,23 +154,32 @@ namespace Nevis14 {
             DateTime startClock = DateTime.Now;
 
             lock (rdPort) {
-                if ((ftStatus = rdPort.GetRxBytesAvailable(ref numBytesAvailable)) != FTDI.FT_STATUS.FT_OK) {
-                    throw new FTDI.FT_EXCEPTION("Failed to get number of available bytes from "
-                        + portName + ". err: " + ftStatus.ToString());
-                }
-                if (numBytesAvailable > 0) {
-                    byte[] readData = new byte[numBytesAvailable];
-                    uint numBytesRead = 0;
+                // Nothing will be able to write to the chip until ReadFromChip has returned,
+                // is this the desired behaviour?
+                while (numBytesAvailable <= 0) {
+                    // Wait for 2 seconds for data, then throw error
+                    if ((DateTime.Now - startClock).TotalSeconds > 2)
+                        throw new Exception("2 seconds elapsed with no data. Was data expected?");
 
-                    if ((ftStatus = rdPort.Read(readData, numBytesAvailable, ref numBytesRead)) != FTDI.FT_STATUS.FT_OK) {
-                        throw new FTDI.FT_EXCEPTION("Failed to read data from "
+                    System.Threading.Thread.Sleep(20);
+                    if ((ftStatus = rdPort.GetRxBytesAvailable(ref numBytesAvailable)) != FTDI.FT_STATUS.FT_OK) {
+                        throw new FTDI.FT_EXCEPTION("Failed to get number of available bytes from "
                             + portName + ". err: " + ftStatus.ToString());
                     }
-                    if (readData.Length != numBytesRead) throw new Exception("Read length mismatch");
-
-                    call(portName, readData.ToList());
-                    System.Threading.Monitor.PulseAll(rdPort);
                 }
+
+                byte[] readData = new byte[numBytesAvailable];
+                uint numBytesRead = 0;
+
+                if ((ftStatus = rdPort.Read(readData, numBytesAvailable, ref numBytesRead)) != FTDI.FT_STATUS.FT_OK) {
+                    throw new FTDI.FT_EXCEPTION("Failed to read data from "
+                        + portName + ". err: " + ftStatus.ToString());
+                }
+                if (readData.Length != numBytesRead) throw new Exception("Read length mismatch");
+
+                call(portName, readData.ToList());
+                // Notify all threads of a change in port status
+                System.Threading.Monitor.PulseAll(rdPort);
             }
         } // End ReadFromChip
     } // End class
