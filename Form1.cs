@@ -85,6 +85,7 @@ namespace Nevis14 {
         Stopwatch getadccalib = new Stopwatch();
         Stopwatch totaltime = new Stopwatch();
         Stopwatch fftTime = new Stopwatch();
+        Stopwatch checkcaltime = new Stopwatch();
 
         // begin functions
         public Form1 () { 
@@ -480,12 +481,14 @@ namespace Nevis14 {
                 chipControl1.adcs[channelNum].mdacs[j].correction1 = (uint) constUp;
                 chipControl1.adcs[channelNum].mdacs[j].correction0 = (uint) constDown;
             }
-            System.IO.File.AppendAllText(String.Format(filePath + "corrections.txt"),
-                Environment.NewLine + System.DateTime.Now + ", channel: " + channelNum + ", "
+            using (StreamWriter corrections = File.AppendText(filePath + "corrections.txt"))
+            {
+                corrections.WriteLine(System.DateTime.Now + ", channel: " + channelNum + ", "
                 + Math.Round(finalCalib[0], 3) + ", "
                 + Math.Round(finalCalib[1], 3) + ", "
                 + Math.Round(finalCalib[2], 3) + ", "
                 + Math.Round(finalCalib[3], 3));
+            }
             chipdata[channelNum + 1] = (channelNum + 1) + ", "
                 + Math.Round(finalCalib[0], 3) + ", "
                 + Math.Round(finalCalib[1], 3) + ", "
@@ -506,7 +509,7 @@ namespace Nevis14 {
         /// 
         public bool CheckCalibration (int iCh, int retry = 0) {
             if (retry > 10) { return false; }
-
+            checkcaltime.Start();
             SendCalibControl((uint) iCh);
 
             // Read back calibration constants
@@ -548,6 +551,7 @@ namespace Nevis14 {
                 // are lost then the chip is defective
                 chipControl1.adcs[iCh].dynamicRange = corr[0] + corr[2] + corr[4] + corr[6] + 255;
                 Console.WriteLine("Dynamic range of chip is: " + chipControl1.adcs[iCh].dynamicRange);
+                checkcaltime.Stop();
                 return ((1 - (chipControl1.adcs[iCh].dynamicRange / 4096.0)) < calBound);
             }
         }   // End CheckCalibration
@@ -722,13 +726,15 @@ namespace Nevis14 {
                 chipdata[0] += run.ToString();
             }
 
+            Stopwatch inittime = new Stopwatch();
             // Set up the FTDI and I2C connection
+            inittime.Start();
             try {
                 InitializeConnection();
             } catch (FTD2XX_NET.FTDI.FT_EXCEPTION exc) { // handles FTDI exceptions
                 Global.ShowError("FTDI exception: " + exc.Message);
             }
-
+            inittime.Stop();
             //SeeTest(5);
             fullcalib.Start();
             if (!DoCalibration(thisWorker, e)) { e.Result = false; return; }
@@ -749,11 +755,15 @@ namespace Nevis14 {
             WriteDataToFile();
             WriteResult(adcData);
             totaltime.Stop();
-            Console.WriteLine(String.Format("{0} elapsed for full calibration ({1}%)", fullcalib.Elapsed, 100 * fullcalib.ElapsedMilliseconds / totaltime.ElapsedMilliseconds));
-            Console.WriteLine(String.Format("{0} spent on 'DoCalWork' ({1}%)", docaltime.Elapsed, 100 * docaltime.ElapsedMilliseconds / totaltime.ElapsedMilliseconds));
-            Console.WriteLine(String.Format("{0} spent on 'SendCalibContent' ({1}%)", sendcalibcont.Elapsed, 100 * sendcalibcont.ElapsedMilliseconds / totaltime.ElapsedMilliseconds));
-            Console.WriteLine(String.Format("{0} spent on 'GetADC' in calibration ({1}%)", getadccalib.Elapsed, 100 * getadccalib.ElapsedMilliseconds / totaltime.ElapsedMilliseconds));
-            Console.WriteLine(String.Format("{0} spent on 'FFT3' ({1}%)", fftTime.Elapsed, 100 * fftTime.ElapsedMilliseconds / totaltime.ElapsedMilliseconds));
+            Console.WriteLine(String.Format("FTDI initialization took {0:F3}s  ({1:F2}%)", inittime.Elapsed.TotalSeconds, 100.0 * inittime.ElapsedMilliseconds / totaltime.ElapsedMilliseconds));
+            Console.WriteLine(String.Format("Full Calibration took {0:F3}s  ({1:F2}%)", fullcalib.Elapsed.TotalSeconds, 100.0 * fullcalib.ElapsedMilliseconds / totaltime.ElapsedMilliseconds));
+            Console.WriteLine(String.Format("\t'CheckCalibration' took {0:F3}s  ({1:F2}%)", checkcaltime.Elapsed.TotalSeconds, 100.0 * checkcaltime.ElapsedMilliseconds / totaltime.ElapsedMilliseconds));
+            Console.WriteLine(String.Format("\t'DoCalWork' took {0:F3}s  ({1:F2}%)", docaltime.Elapsed.TotalSeconds, 100.0 * docaltime.ElapsedMilliseconds / totaltime.ElapsedMilliseconds));
+            Console.WriteLine(String.Format("\t \t'SendCalibControl' took {0:F3}s  ({1:F2}%)", sendcalibcont.Elapsed.TotalSeconds, 100.0 * sendcalibcont.ElapsedMilliseconds / totaltime.ElapsedMilliseconds));
+            Console.WriteLine(String.Format("\t \t'GetADC' in calibration took {0:F3}s  ({1:F2}%)", getadccalib.Elapsed.TotalSeconds, 100.0 * getadccalib.ElapsedMilliseconds / totaltime.ElapsedMilliseconds));
+            Console.WriteLine(String.Format("'FFT3' took {0:F3}s  ({1:F2}%)", fftTime.Elapsed.TotalSeconds, 100.0 * fftTime.ElapsedMilliseconds / totaltime.ElapsedMilliseconds));
+            long unaccounted = totaltime.ElapsedMilliseconds - fftTime.ElapsedMilliseconds - fullcalib.ElapsedMilliseconds - inittime.ElapsedMilliseconds;
+            Console.WriteLine(String.Format("{0:F3} unaccounted for ({1:F2}%)", unaccounted / 1000.0, 100.0 * unaccounted / totaltime.ElapsedMilliseconds));
             e.Result = true;
             
         } // End bkgWorker_DoWork
