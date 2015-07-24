@@ -60,13 +60,13 @@ namespace Nevis14 {
                     sampFreq = 40.0; break;
             }
 
-            initializeChart();
+            InitializeChart();
 
             time = DateTime.Now;
-            double[][] signalHisto = readData();
+            double[][] signalHisto = ReadData();
             Console.WriteLine(String.Format("Reading Data Took {0} Seconds", (DateTime.Now - time).TotalSeconds));
 
-            formatChart("sig");
+            FormatChart("sig");
             chart1.SaveImage(filePath + "signal.png", ChartImageFormat.Png);
 
             //---- Start to Take FFTs----//
@@ -74,7 +74,7 @@ namespace Nevis14 {
             for (int i = 0; i < 4; i++) adcData[i].outFreq = new string[5] { "", "", "", "", "" };
 
             // Reset Charts
-            initializeChart();
+            InitializeChart();
 
             // Start doing FFTs for each channel
             for (int isig = 0; isig < 4; isig++)
@@ -94,7 +94,7 @@ namespace Nevis14 {
 
                 //----Do the FFT----//
 
-                double[] fourierHisto = doFFT(signalHisto[isig]);
+                double[] fourierHisto = DoFFT(signalHisto[isig]);
 
                 //----Find the Second Largest Value----// 
                 bin1 = fourierHisto[0];         // bin1 has the largest value, however
@@ -176,8 +176,8 @@ namespace Nevis14 {
                 adcData[isig].enob = (-adcData[isig].sinad - 1.76) / 6.02;
             }   //End FFT
 
-            formatChart("FFT");
-            addDataToChart(adcData);
+            FormatChart("FFT");
+            AddDataToChart(adcData);
             chart1.Size = new Size(690, 595);
             chart1.SaveImage(filePath + "fft.png", ChartImageFormat.Png); // Save the FFT Charts to OUTPUTIN
 
@@ -192,7 +192,7 @@ namespace Nevis14 {
             return adcData;
         }
 
-        private void formatChart(string opt)
+        private void FormatChart(string opt)
         {
             for (int isig = 0; isig < 4; isig++)
             {
@@ -305,7 +305,7 @@ namespace Nevis14 {
                 }
             }
         }
-        private void resetChart(Chart chart1)
+        private void ResetChart(Chart chart1)
         {
             chart1.ChartAreas.Clear();
             chart1.Series.Clear();
@@ -313,7 +313,7 @@ namespace Nevis14 {
             chart1.Legends.Clear();
         }
         
-        private void addDataToChart(AdcData[] adcData)
+        private void AddDataToChart(AdcData[] adcData)
         {
                                 // Add QA information to the chart area
             for (int isig = 0; isig < 4; isig++)
@@ -349,9 +349,9 @@ namespace Nevis14 {
                 chart1.Legends.Add(fftInfo);
             }
         }
-        private void initializeChart()
+        private void InitializeChart()
         {
-            resetChart(chart1);
+            ResetChart(chart1);
             chart1.Titles.Add(DateTime.Now.ToString());
 
             for (int isig = 0; isig < 4; isig++)
@@ -379,7 +379,7 @@ namespace Nevis14 {
             }
         }
 
-        private double[][] readData()
+        private double[][] ReadData()
         {
             double[][] signalHisto = new double[4][];
             for (int isig = 0; isig < 4; isig++)
@@ -418,7 +418,7 @@ namespace Nevis14 {
             return signalHisto;
         }
         
-        private double[] doFFT(double[] signalHisto)
+        private double[] DoFFT(double[] signalHisto)
         {
             double[] fourierHisto = new double[sampLength];
 
