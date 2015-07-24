@@ -79,13 +79,17 @@ namespace Nevis14 {
 
         Ftdi ftdi;
 
-        Stopwatch fullcalib = new Stopwatch();
+        Stopwatch fullcalibtime = new Stopwatch();
         Stopwatch docaltime = new Stopwatch();
-        Stopwatch sendcalibcont = new Stopwatch();
-        Stopwatch getadccalib = new Stopwatch();
+        Stopwatch sendcalibconttime = new Stopwatch();
+        Stopwatch getadccalibtime = new Stopwatch();
         Stopwatch totaltime = new Stopwatch();
-        Stopwatch fftTime = new Stopwatch();
+        Stopwatch ffttime = new Stopwatch();
         Stopwatch checkcaltime = new Stopwatch();
+        Stopwatch takedatatime = new Stopwatch();
+        Stopwatch inittime = new Stopwatch();
+
+
 
         // begin functions
         public Form1 () { 
@@ -188,13 +192,13 @@ namespace Nevis14 {
 
             adc.SetCalInfo(calNum, mdacNum);
 
-            sendcalibcont.Start();
+            sendcalibconttime.Start();
             SendCalibControl(adc.GetChannel());
-            sendcalibcont.Stop();
+            sendcalibconttime.Stop();
 
-            getadccalib.Start();
+            getadccalibtime.Start();
             GetAdcData(samplesForCalib);
-            getadccalib.Stop();
+            getadccalibtime.Stop();
             // If the buffer is not full, then retry up to two times
             if (bufferA.Count != samplesForCalib * 8) {
                 Console.WriteLine(Environment.NewLine + "Retrying MDAC: " + (mdacNum + 1) + " calnum: " + calNum
@@ -726,7 +730,6 @@ namespace Nevis14 {
                 chipdata[0] += run.ToString();
             }
 
-            Stopwatch inittime = new Stopwatch();
             // Set up the FTDI and I2C connection
             inittime.Start();
             try {
@@ -736,33 +739,36 @@ namespace Nevis14 {
             }
             inittime.Stop();
             //SeeTest(5);
-            fullcalib.Start();
+            fullcalibtime.Start();
             if (!DoCalibration(thisWorker, e)) { e.Result = false; return; }
-            fullcalib.Stop();
+            fullcalibtime.Stop();
 
             totaltime.Stop();
             DialogResult answer = MessageBox.Show("Finished calibrating. Please turn on the waveform generator.",
                 "", MessageBoxButtons.OKCancel);
             if (answer == DialogResult.Cancel) { e.Cancel = true; return; }
             totaltime.Start();
+            takedatatime.Start();
             if (!TakeData()) { e.Result = false; Console.WriteLine("Error Taking Data"); return; }
+            takedatatime.Stop();
 
             Console.WriteLine("Data Taken");
-            fftTime.Start();
+            ffttime.Start();
             AdcData[] adcData = FFT3(10, chipdata);
-            fftTime.Stop();
+            ffttime.Stop();
             if (adcData == null) throw new Exception("No data returned from FFT3.");
             WriteDataToFile();
             WriteResult(adcData);
             totaltime.Stop();
             Console.WriteLine(String.Format("FTDI initialization took {0:F3}s  ({1:F2}%)", inittime.Elapsed.TotalSeconds, 100.0 * inittime.ElapsedMilliseconds / totaltime.ElapsedMilliseconds));
-            Console.WriteLine(String.Format("Full Calibration took {0:F3}s  ({1:F2}%)", fullcalib.Elapsed.TotalSeconds, 100.0 * fullcalib.ElapsedMilliseconds / totaltime.ElapsedMilliseconds));
+            Console.WriteLine(String.Format("Full Calibration took {0:F3}s  ({1:F2}%)", fullcalibtime.Elapsed.TotalSeconds, 100.0 * fullcalibtime.ElapsedMilliseconds / totaltime.ElapsedMilliseconds));
             Console.WriteLine(String.Format("\t'CheckCalibration' took {0:F3}s  ({1:F2}%)", checkcaltime.Elapsed.TotalSeconds, 100.0 * checkcaltime.ElapsedMilliseconds / totaltime.ElapsedMilliseconds));
             Console.WriteLine(String.Format("\t'DoCalWork' took {0:F3}s  ({1:F2}%)", docaltime.Elapsed.TotalSeconds, 100.0 * docaltime.ElapsedMilliseconds / totaltime.ElapsedMilliseconds));
-            Console.WriteLine(String.Format("\t \t'SendCalibControl' took {0:F3}s  ({1:F2}%)", sendcalibcont.Elapsed.TotalSeconds, 100.0 * sendcalibcont.ElapsedMilliseconds / totaltime.ElapsedMilliseconds));
-            Console.WriteLine(String.Format("\t \t'GetADC' in calibration took {0:F3}s  ({1:F2}%)", getadccalib.Elapsed.TotalSeconds, 100.0 * getadccalib.ElapsedMilliseconds / totaltime.ElapsedMilliseconds));
-            Console.WriteLine(String.Format("'FFT3' took {0:F3}s  ({1:F2}%)", fftTime.Elapsed.TotalSeconds, 100.0 * fftTime.ElapsedMilliseconds / totaltime.ElapsedMilliseconds));
-            long unaccounted = totaltime.ElapsedMilliseconds - fftTime.ElapsedMilliseconds - fullcalib.ElapsedMilliseconds - inittime.ElapsedMilliseconds;
+            Console.WriteLine(String.Format("\t \t'SendCalibControl' took {0:F3}s  ({1:F2}%)", sendcalibconttime.Elapsed.TotalSeconds, 100.0 * sendcalibconttime.ElapsedMilliseconds / totaltime.ElapsedMilliseconds));
+            Console.WriteLine(String.Format("\t \t'GetADC' in calibration took {0:F3}s  ({1:F2}%)", getadccalibtime.Elapsed.TotalSeconds, 100.0 * getadccalibtime.ElapsedMilliseconds / totaltime.ElapsedMilliseconds));
+            Console.WriteLine(String.Format("'FFT3' took {0:F3}s  ({1:F2}%)", ffttime.Elapsed.TotalSeconds, 100.0 * ffttime.ElapsedMilliseconds / totaltime.ElapsedMilliseconds));
+            Console.WriteLine(String.Format("Taking Data took {0:F3}s  ({1:F2}%)", takedatatime.Elapsed.TotalSeconds, 100.0 * takedatatime.ElapsedMilliseconds / totaltime.ElapsedMilliseconds));
+            long unaccounted = totaltime.ElapsedMilliseconds - ffttime.ElapsedMilliseconds - fullcalibtime.ElapsedMilliseconds - inittime.ElapsedMilliseconds - takedatatime.ElapsedMilliseconds;
             Console.WriteLine(String.Format("{0:F3} unaccounted for ({1:F2}%)", unaccounted / 1000.0, 100.0 * unaccounted / totaltime.ElapsedMilliseconds));
             e.Result = true;
             
@@ -838,6 +844,18 @@ namespace Nevis14 {
             fftBox.Update(() => fftBox.Image = null);
             if(ftdi != null)
                 ftdi.Close();
+
+            // Reset Timers
+            totaltime.Reset();
+            ffttime.Reset();
+            takedatatime.Reset();
+            sendcalibconttime.Reset();
+            getadccalibtime.Reset();
+            fullcalibtime.Reset();
+            docaltime.Reset();
+            checkcaltime.Reset();
+            inittime.Reset();
+            
         } // End resetGui
     } // End Form1
 }
