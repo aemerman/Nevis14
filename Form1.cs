@@ -681,8 +681,7 @@ namespace Nevis14 {
                 commandsout.Write(s);
             };
 
-            if (commandCheckBox.Checked)
-                commandBox.Update(() => commandBox.AppendText(Environment.NewLine + port + " " + s));
+            commandBox.Update(() => commandBox.AppendText(Environment.NewLine + port + " " + s));
 
             /*System.IO.File.AppendAllText(filePath + "commands.log",
                 Environment.NewLine + port + " " + s);*/

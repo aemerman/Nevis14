@@ -32,7 +32,6 @@ namespace Nevis14 {
             this.chipNumLabel = new System.Windows.Forms.Label();
             this.fftBox = new System.Windows.Forms.PictureBox();
             this.resultBox = new System.Windows.Forms.TextBox();
-            this.commandCheckBox = new System.Windows.Forms.CheckBox();
             this.chipControl1 = new Nevis14.ChipControl();
             ((System.ComponentModel.ISupportInitialize)(this.fftBox)).BeginInit();
             this.SuspendLayout();
@@ -50,11 +49,11 @@ namespace Nevis14 {
             // 
             // commandBox
             // 
-            this.commandBox.Location = new System.Drawing.Point(605, 40);
+            this.commandBox.Location = new System.Drawing.Point(605, 10);
             this.commandBox.Multiline = true;
             this.commandBox.Name = "commandBox";
             this.commandBox.ReadOnly = true;
-            this.commandBox.Size = new System.Drawing.Size(385, 100);
+            this.commandBox.Size = new System.Drawing.Size(385, 130);
             this.commandBox.TabIndex = 1;
             // 
             // bkgWorker
@@ -119,16 +118,6 @@ namespace Nevis14 {
             this.resultBox.Size = new System.Drawing.Size(280, 210);
             this.resultBox.TabIndex = 10;
             // 
-            // commandCheckBox
-            // 
-            this.commandCheckBox.AutoSize = true;
-            this.commandCheckBox.Location = new System.Drawing.Point(605, 17);
-            this.commandCheckBox.Name = "commandCheckBox";
-            this.commandCheckBox.Size = new System.Drawing.Size(215, 18);
-            this.commandCheckBox.TabIndex = 11;
-            this.commandCheckBox.Text = "Print commands sent to chip";
-            this.commandCheckBox.UseVisualStyleBackColor = true;
-            // 
             // chipControl1
             // 
             this.chipControl1.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F);
@@ -145,7 +134,6 @@ namespace Nevis14 {
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 14F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1000, 750);
-            this.Controls.Add(this.commandCheckBox);
             this.Controls.Add(this.resultBox);
             this.Controls.Add(this.fftBox);
             this.Controls.Add(this.chipNumLabel);
@@ -176,7 +164,6 @@ namespace Nevis14 {
         private System.Windows.Forms.Label chipNumLabel;
         private System.Windows.Forms.PictureBox fftBox;
         private System.Windows.Forms.TextBox resultBox;
-        private System.Windows.Forms.CheckBox commandCheckBox;
     }
 }
 
