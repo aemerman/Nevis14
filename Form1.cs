@@ -701,7 +701,14 @@ namespace Nevis14 {
         } // End runButton_Click
 
         private void cancelButton_Click (object sender, EventArgs e) {
-            bkgWorker.CancelAsync();
+            Task cancel = Task.Factory.StartNew(() => bkgWorker.CancelAsync());
+            cancel.Wait();
+            for (int channelnum = 0; channelnum < 4; channelnum++ )
+            {
+                if (chipControl1.adcs[channelnum].isActive)
+                    chipControl1.adcs[channelnum].Deactivate();
+            }
+            runButton.Enabled = true;
         } // End cancelButton_Click
 
         private void bkgWorker_DoWork (object sender, DoWorkEventArgs e) {
