@@ -140,7 +140,7 @@ namespace Nevis14 {
         /// <param name="e"></param>
         /// <returns></returns>
         public void DoCalibration (object sender, DoWorkEventArgs e) {
-            BackgroundWorker bw = sender as BackgroundWorker;
+            BackgroundWorker bw = (BackgroundWorker)sender;
             sarForMdac.Clear();
             avgMdac.Clear();
             int channelNum = 0;
@@ -702,8 +702,34 @@ namespace Nevis14 {
             }
             System.IO.Directory.CreateDirectory(filePath + path);
             return path + "/";
-        }
+        } // End CreateNewDirectory
 
+        public void RunOnBkgWorker (DoWorkEventHandler work) {
+            BackgroundWorker bw = new BackgroundWorker();
+            bw.DoWork += new DoWorkEventHandler(work);
+            bw.RunWorkerCompleted += new RunWorkerCompletedEventHandler(BkgWorker_Completed);
+            bw.WorkerSupportsCancellation = true;
+            runningWorkers.Add(bw);
+            bw.RunWorkerAsync();
+        } // End RunOnBkgWorker
+
+        private void BkgWorker_Completed (object sender, RunWorkerCompletedEventArgs e) {
+            runningWorkers.Remove((BackgroundWorker) sender);
+            if (e.Error != null) {
+                Global.ShowError(e.Error.Message);
+                ResetGui();
+            } else if (e.Cancelled == true) {
+                ResetGui();
+            } else {
+                DialogResult answer = Global.AskError("Result of operation is " + e.Result.ToString() + ". Continue?");
+                if (answer == DialogResult.Retry) {
+                    runningWorkers.Add((BackgroundWorker) sender);
+                    ((BackgroundWorker) sender).RunWorkerAsync();
+                }
+                // Treat Ignore as Continue
+            }
+        } // End BkgWorker_Completed
+        
         private void connectButton_Click (object sender, EventArgs e) {
             // The background worker will only be started if there is a valid chip number (any int)
             connectButton.Update(() => connectButton.Enabled = false);
@@ -736,35 +762,20 @@ namespace Nevis14 {
         } // End connectButton_Click
 
         private void calibButton_Click (object sender, EventArgs e) {
-            BackgroundWorker bw = new BackgroundWorker();
-            bw.DoWork += new DoWorkEventHandler(DoCalibration);
-            bw.RunWorkerCompleted += new RunWorkerCompletedEventHandler(BkgWorker_Completed);
-            bw.WorkerSupportsCancellation = true;
-            runningWorkers.Add(bw);
-            bw.RunWorkerAsync();
+            RunOnBkgWorker(DoCalibration);
         }
 
         private void seeButton_Click (object sender, EventArgs e) {
-            BackgroundWorker bw = new BackgroundWorker();
-            bw.DoWork += new DoWorkEventHandler(SeeTest);
-            bw.RunWorkerCompleted += new RunWorkerCompletedEventHandler(BkgWorker_Completed);
-            bw.WorkerSupportsCancellation = true;
-            runningWorkers.Add(bw);
-            bw.RunWorkerAsync();
+            RunOnBkgWorker(SeeTest);
         }
 
         private void dataButton_Click (object sender, EventArgs e) {
-            AdcData[] adcData;
-            BackgroundWorker bw = new BackgroundWorker();
-            bw.DoWork += new DoWorkEventHandler((obj, args) => { 
+            RunOnBkgWorker((obj, args) => {
+                AdcData[] adcData;
                 TakeData(); 
                 adcData = FFT3(40, chipdata);
                 WriteResult(adcData);
             });
-            bw.RunWorkerCompleted += new RunWorkerCompletedEventHandler(BkgWorker_Completed);
-            bw.WorkerSupportsCancellation = true;
-            runningWorkers.Add(bw);
-            bw.RunWorkerAsync();
         }
 
         private void cancelButton_Click (object sender, EventArgs e) {
@@ -777,22 +788,6 @@ namespace Nevis14 {
             }
         } // End cancelButton_Click
 
-        private void BkgWorker_Completed (object sender, RunWorkerCompletedEventArgs e) {
-            runningWorkers.Remove((BackgroundWorker) sender);
-            if (e.Error != null) {
-                Global.ShowError(e.Error.Message);
-                ResetGui();
-            } else if (e.Cancelled == true) {
-                //ResetGui();
-            } else {
-                DialogResult answer = Global.AskError("Result of operation is " + e.Result.ToString() + ". Continue?");
-                if (answer == DialogResult.Retry) {
-                    runningWorkers.Add((BackgroundWorker) sender);
-                    ((BackgroundWorker) sender).RunWorkerAsync();
-                }
-                // Treat Ignore as Continue
-            }
-        }
         private void chipNumBox_TypeValidationCompleted (object sender, System.Windows.Forms.TypeValidationEventArgs e) {
             this.chipNumBox.BackColor = default(System.Drawing.Color);
             if (!e.IsValidInput) {
