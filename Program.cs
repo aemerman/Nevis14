@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -60,6 +61,8 @@ namespace Nevis14 {
         public static System.Drawing.Color OffColor = default(System.Drawing.Color);
     }
 
+    public delegate void FileWriteDelegate(string path, IEnumerable<string> contents);
+
     public static class MyExtensionMethods {
 
         // Perform the action, invoking it on the control's owner thread if necessary
@@ -88,5 +91,49 @@ namespace Nevis14 {
                 control.SafeInvokeAsync(() => { action(); control.Update(); });
             }
         }
-    }
+
+        public static void AppendLines (this TextBox box, List<string> lines) {
+            foreach (string s in lines) {
+                box.AppendText(s);
+            }
+        }
+
+        public static List<string> To16BitBinary (this List<byte> buffer) {
+            if ((buffer.Count % 8) != 0) throw new Exception("Buffer size is " + buffer.Count + ", not a multiple of 8.");
+            List<string> lines = new List<string>();
+            StringBuilder s = new StringBuilder(72);
+
+            for (int i = 0; i < buffer.Count; i += 8) {
+                s.Clear();
+                for (int j = 0; j < 8; j++) {
+                    // Show the binary numbers
+                    s.Append(Convert.ToString(buffer[i + j], 2).PadLeft(8, '0') + " ");
+                }
+                lines.Add(s.ToString());
+            }
+            return lines;
+        }
+        public static List<string> ToDecimal (this List<byte> buffer) {
+            if ((buffer.Count % 8) != 0) throw new Exception("Buffer size is " + buffer.Count + ", not a multiple of 8.");
+            List<string> lines = new List<string>();
+            StringBuilder s = new StringBuilder(20);
+
+            for (int i = 0; i < buffer.Count; i += 8) {
+                s.Clear();
+                for (int j = 0; j < 8; j += 2) {
+                    s.Append(Convert.ToString(((buffer[i + j] << 8) + buffer[i + j + 1]), 10).PadLeft(4, '0') + " ");
+                }
+                lines.Add(s.ToString());
+            }
+            return lines;
+        }
+        public static string ToSeparatedString (this List<string> list) {
+            StringBuilder s = new StringBuilder();
+            for (int i = 0; i < list.Count; i++) {
+                s.Append(list[i]);
+                s.Append(Environment.NewLine);
+            }
+            return s.ToString();
+        }
+    } // End ExtensionMethods
 }

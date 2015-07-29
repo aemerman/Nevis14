@@ -275,12 +275,8 @@ namespace Nevis14 {
         } // End GetAdcData
 
         public void GetPllData (uint samples) {
-            // StartAnalogOperation
-            /*
-            StartMeasurement = 0; SendStatus();
-            StartMeasurement = 1; SendStatus();
-            StartMeasurement = 0;
-            */
+            SendStartMeasurementCommand();
+
             fifoAOperation = 4;
             fifoACounter = samples;  //samples // see the Verilog code
             // number of bytes sent to fifo is 16bytes/sample

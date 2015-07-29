@@ -117,7 +117,7 @@ namespace Nevis14 {
                 SendCalibControl(iCh);
             }
             GetAdcData(1);
-            if (bufferA.Count != 8) throw new Exception("Not enough data for serializer test.");
+            if (bufferA.Count != 8) throw new Exception("Buffer size: " + bufferA.Count + ", not correct for serializer test.");
             for (int i = 0; i < bufferA.Count; i += 2) {
                 if (bufferA[i] != ((1 << 7) + (7 << 1))) return false; // byte should be 8'b10001110
                 if (bufferA[i + 1] != (15 << 4)) return false; // byte should be 8'b11110000
@@ -579,14 +579,20 @@ namespace Nevis14 {
             GetAdcData(12400);
             if (bufferA.Count != 12400 * 8) { Console.WriteLine(bufferA.Count); return false; }
 
-            WriteDataToGui(bufferA);
+            List<string> lines = bufferA.ToDecimal();
+            WriteDataToGui(lines);
 
             StreamWriter adcwrite = new StreamWriter(filePath + "adcData.txt");
-            StringBuilder s = new StringBuilder("", bufferA.Count * 3);
+            /*StringBuilder s = new StringBuilder("", bufferA.Count * 3);
             for (int i = 0; i < bufferA.Count; i += 8) {
                 for (int j = 0; j < 8; j += 2) {
                     s.Append(((bufferA[i + j] << 8) + bufferA[i + j + 1]) + " ");
                 }
+                s.Append(Environment.NewLine);
+            }*/
+            StringBuilder s = new StringBuilder(lines.Count * 22);
+            for (int i = 0; i < lines.Count; i += 8) {
+                s.Append(lines[i]);
                 s.Append(Environment.NewLine);
             }
             adcwrite.Write(s);
@@ -606,6 +612,7 @@ namespace Nevis14 {
                 SendCalibControl(iCh);
             }
             GetAdcData(1000); // Fill buffer
+            dataBox.Update(() => dataBox.Text = (bufferA.To16BitBinary()).ToSeparatedString(), true);
 
             adcFilter = 1; SendStatus();
             for (uint iCh = 0; iCh < 4; iCh++) {
@@ -617,23 +624,28 @@ namespace Nevis14 {
             }
             SendPllResetCommand();
             GetAdcData(1000); // Initialize SEE data taking
-
+            dataBox.Update(() => dataBox.Text = (bufferA.To16BitBinary()).ToSeparatedString(), true);
+            
             string seePath = CreateNewDirectory("SEE");
             string pllPath = CreateNewDirectory("PLL");
             int i = 0;
             while (!((BackgroundWorker)sender).CancellationPending) {
+                FileWriteDelegate seeWriter = new FileWriteDelegate(File.AppendAllLines);
+                FileWriteDelegate pllWriter = new FileWriteDelegate(File.AppendAllLines);
                 System.Threading.Thread.Sleep(seeWaitTimeInSeconds * 1000);
                 GetAdcData(1000);
-                List<string> lines = ParseSee(bufferA);
-                File.AppendAllLines(filePath + seePath + "seeData_" + i.ToString().PadLeft(3,'0') + ".txt", lines);
+                List<string> seeData = bufferA.To16BitBinary();
+                dataBox.Update(() => dataBox.Text = seeData.ToSeparatedString());
+                seeWriter.BeginInvoke(filePath + seePath + "seeData_" + i.ToString().PadLeft(3,'0') + ".txt", seeData, null, null);
 
                 GetPllData(10);
-                lines = ParseSee(bufferA);
-                File.AppendAllLines(filePath + pllPath + "pllData_" + i.ToString().PadLeft(3, '0') + ".txt", lines);
+                List<string> pllData = bufferA.To16BitBinary();
+                pllWriter.BeginInvoke(filePath + pllPath + "pllData_" + i.ToString().PadLeft(3, '0') + ".txt", pllData, null, null);
                 SendPllResetCommand();
+                i++;
             }
             adcFilter = 0; SendStatus();
-            return;
+            e.Cancel = true;
         } // End SeeTest
 
         private List<string> ParseSee(List<byte> data) {
@@ -653,23 +665,11 @@ namespace Nevis14 {
         } // End ParseSee
 
         // Parses data and it to the data box (right side of GUI)
-        private void WriteDataToGui (List<byte> data) {
+        private void WriteDataToGui (List<string> data) {
             // ADC data should be output in multiples of 8
             // (b.c. there are 4 channels on the chip and there are 2 bytes per channel)
-            if (data.Count % 8 != 0) throw new Exception("Data size is not a multiple of 8");
 
-            StringBuilder s = new StringBuilder(Environment.NewLine, data.Count * 3);
-            for (int i = 0; i < data.Count; i += 8) {
-                for (int j = 0; j < 8; j += 2) {
-                    s.Append(((data[i + j] << 8) + data[i + j + 1]) + " ");
-                }
-                s.Append(Environment.NewLine);
-            }
-
-            dataBox.Update(() => dataBox.AppendText(s.ToString()));
-            //System.IO.File.AppendAllText(filePath + "adcData.txt",
-            //    Environment.NewLine + System.DateTime.Now);
-            //System.IO.File.AppendAllText(filePath + "adcData.txt", s);
+            dataBox.Update(() => dataBox.AppendLines(data));
         } // End WriteDataToGui
 
         // Parses commands and writes them to the command box (upper left on GUI)
@@ -694,7 +694,7 @@ namespace Nevis14 {
 
         public string CreateNewDirectory (string prefix, int width = 2) {
             int dirNum = 0;
-            string path = prefix + dirNum.ToString().PadLeft(width, '0');
+            string path = prefix + "_" + dirNum.ToString().PadLeft(width, '0');
             while (System.IO.Directory.Exists(filePath + path)) {
                 dirNum++;
                 path = path.Remove(path.Length - width);
@@ -719,7 +719,7 @@ namespace Nevis14 {
                 Global.ShowError(e.Error.Message);
                 ResetGui();
             } else if (e.Cancelled == true) {
-                ResetGui();
+                // Anything?
             } else {
                 DialogResult answer = Global.AskError("Result of operation is " + e.Result.ToString() + ". Continue?");
                 if (answer == DialogResult.Retry) {
