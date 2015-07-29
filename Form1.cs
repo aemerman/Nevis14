@@ -9,6 +9,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.IO;
+using System.Threading;
 
 namespace Nevis14 {
     // This file contains the main functions used by the code
@@ -18,6 +19,7 @@ namespace Nevis14 {
         // The .exe file is located in ./bin/Debug so the path
         // must move back to the base of the directory structure
         string filePath = Application.StartupPath + "/../../OUTPUT/";
+        List<BackgroundWorker> runningWorkers = new List<BackgroundWorker>();
 
         //TODO: add calibration constant requirements 
         const double calBound = 0.10;  // maximum % for the calibration parameters
@@ -47,6 +49,7 @@ namespace Nevis14 {
             NoStop = 0
         };
 
+        const int seeWaitTimeInSeconds = 1;
         const int samplesForCalib = 3000;
         int samplesUsedForCalib = samplesForCalib - 20;
 
@@ -121,6 +124,9 @@ namespace Nevis14 {
             }
             for (uint iCh = 0; iCh < 4; iCh++) {
                 chipControl1.adcs[iCh].serializer = 0;
+                chipControl1.adcs[iCh].serializer = 0;
+                chipControl1.adcs[iCh].serializer = 0;
+                chipControl1.adcs[iCh].serializer = 0;
                 SendCalibControl(iCh);
             }
             return true;
@@ -133,7 +139,8 @@ namespace Nevis14 {
         /// <param name="bw"></param>
         /// <param name="e"></param>
         /// <returns></returns>
-        public bool DoCalibration (BackgroundWorker bw, DoWorkEventArgs e) {
+        public void DoCalibration (object sender, DoWorkEventArgs e) {
+            BackgroundWorker bw = sender as BackgroundWorker;
             sarForMdac.Clear();
             avgMdac.Clear();
             int channelNum = 0;
@@ -143,9 +150,9 @@ namespace Nevis14 {
             while (channelNum <= 3) {
                 chipControl1.Update(() => chipControl1.Activate((uint) channelNum), true);
                 while (mdacNum >= 0) {
-                    if (bw.CancellationPending) { e.Cancel = true; return false; }
+                    if (bw.CancellationPending) { e.Cancel = true; return; }
                     docaltime.Start();
-                    if (!DoCalWork(ref chipControl1.adcs[channelNum], calNum, mdacNum)) return false;
+                    if (!DoCalWork(ref chipControl1.adcs[channelNum], calNum, mdacNum)) { e.Result = false; return; }
                     docaltime.Stop();
                     calNum++;
                     if (calNum == 4) {
@@ -167,14 +174,14 @@ namespace Nevis14 {
 
                 // Get ready for next channel
                 //if (!success) { e.Result = false; return false; }
-                if (bw.CancellationPending) { e.Cancel = true; return false; }
+                if (bw.CancellationPending) { e.Cancel = true; return; }
 
                 channelNum++; mdacNum = 3; calNum = 0;
                 sarForMdac.Clear();
                 avgMdac.Clear();
             } // End loop over channels
 
-            return true;
+            e.Result = true;
         } // End DoCalibration
 
         /// <summary>
@@ -589,7 +596,7 @@ namespace Nevis14 {
             return true;
         } // End TakeData
 
-        public void SeeTest (int waitTimeInSeconds) {
+        public void SeeTest (object sender, DoWorkEventArgs e) {
             adcFilter = 0; SendStatus();
             for (uint iCh = 0; iCh < 4; iCh++) {
                 chipControl1.SafeInvoke(() => {
@@ -614,8 +621,8 @@ namespace Nevis14 {
             string seePath = CreateNewDirectory("SEE");
             string pllPath = CreateNewDirectory("PLL");
             int i = 0;
-            while (!bkgWorker.CancellationPending) {
-                System.Threading.Thread.Sleep(waitTimeInSeconds * 1000);
+            while (!((BackgroundWorker)sender).CancellationPending) {
+                System.Threading.Thread.Sleep(seeWaitTimeInSeconds * 1000);
                 GetAdcData(1000);
                 List<string> lines = ParseSee(bufferA);
                 File.AppendAllLines(filePath + seePath + "seeData_" + i.ToString().PadLeft(3,'0') + ".txt", lines);
@@ -697,103 +704,95 @@ namespace Nevis14 {
             return path + "/";
         }
 
-        private void runButton_Click (object sender, EventArgs e) {
+        private void connectButton_Click (object sender, EventArgs e) {
             // The background worker will only be started if there is a valid chip number (any int)
-            runButton.Update(() => runButton.Enabled = false);
+            connectButton.Update(() => connectButton.Enabled = false);
             if (this.chipNumBox.Text == "" || this.chipNumBox.BackColor == System.Drawing.Color.Red) {
                 MessageBox.Show("Invalid chip id. Please enter the number of the chip you are testing before running the code.");
             } else {
                 ResetGui();
                 filePath += "Nevis14_" + chipNumBox.Text.PadLeft(5, '0') + "/";
-                bkgWorker.RunWorkerAsync();
+                chipdata[0] = String.Format("* {0}, {1},{2}, ", chipNumBox.Text, DateTime.Now.Date, DateTime.Now.TimeOfDay);
+                // Create folder to store output files, if it doesn't already exist
+                if (!System.IO.Directory.Exists(filePath)) {
+                    System.IO.Directory.CreateDirectory(filePath);
+                }
+                filePath += CreateNewDirectory("Run");
+                chipdata[0] += filePath.Substring(filePath.Length - 3, 2);
+                try {
+                    InitializeConnection();
+                } catch (FTD2XX_NET.FTDI.FT_EXCEPTION exc) { // handles FTDI exceptions
+                    Global.ShowError("FTDI exception: " + exc.Message);
+                }
+                while (!SerializerTest()) {
+                    // User has 3 options: 
+                    //   Abort immediately quits program (in AskError), 
+                    //   Retry continues the loop,
+                    //   Ignore breaks the loop and continues the program
+                    if (Global.AskError("Failed serializer test. Retry?") != DialogResult.Retry) break;
+                }
             }
-        } // End runButton_Click
+            connectButton.Update(() => connectButton.Enabled = true);
+        } // End connectButton_Click
+
+        private void calibButton_Click (object sender, EventArgs e) {
+            BackgroundWorker bw = new BackgroundWorker();
+            bw.DoWork += new DoWorkEventHandler(DoCalibration);
+            bw.RunWorkerCompleted += new RunWorkerCompletedEventHandler(BkgWorker_Completed);
+            bw.WorkerSupportsCancellation = true;
+            runningWorkers.Add(bw);
+            bw.RunWorkerAsync();
+        }
+
+        private void seeButton_Click (object sender, EventArgs e) {
+            BackgroundWorker bw = new BackgroundWorker();
+            bw.DoWork += new DoWorkEventHandler(SeeTest);
+            bw.RunWorkerCompleted += new RunWorkerCompletedEventHandler(BkgWorker_Completed);
+            bw.WorkerSupportsCancellation = true;
+            runningWorkers.Add(bw);
+            bw.RunWorkerAsync();
+        }
+
+        private void dataButton_Click (object sender, EventArgs e) {
+            AdcData[] adcData;
+            BackgroundWorker bw = new BackgroundWorker();
+            bw.DoWork += new DoWorkEventHandler((obj, args) => { 
+                TakeData(); 
+                adcData = FFT3(40, chipdata);
+                WriteResult(adcData);
+            });
+            bw.RunWorkerCompleted += new RunWorkerCompletedEventHandler(BkgWorker_Completed);
+            bw.WorkerSupportsCancellation = true;
+            runningWorkers.Add(bw);
+            bw.RunWorkerAsync();
+        }
 
         private void cancelButton_Click (object sender, EventArgs e) {
-            Task cancel = Task.Factory.StartNew(() => bkgWorker.CancelAsync());
-            cancel.Wait();
-            for (int channelnum = 0; channelnum < 4; channelnum++ )
-            {
+            foreach (BackgroundWorker bw in runningWorkers) {
+                bw.CancelAsync();
+            }
+            for (int channelnum = 0; channelnum < 4; channelnum++ ) {
                 if (chipControl1.adcs[channelnum].isActive)
                     chipControl1.adcs[channelnum].Deactivate();
             }
-            runButton.Enabled = true;
         } // End cancelButton_Click
 
-        private void bkgWorker_DoWork (object sender, DoWorkEventArgs e) {
-            BackgroundWorker thisWorker = sender as BackgroundWorker;
-            totaltime.Start();
-            // Normally the RunWorkerCompleted method would handle exceptions, but
-            // that doesn't work in the debugger. Will the undergrads be using a
-            // release version?
-            chipdata[0] = String.Format("* {0}, {1},{2}, ", chipNumBox.Text, DateTime.Now.Date, DateTime.Now.TimeOfDay);
-            // Create folder to store output files, if it doesn't already exist
-            if (!System.IO.Directory.Exists(filePath)) {
-                System.IO.Directory.CreateDirectory(filePath);
-            }
-            filePath += CreateNewDirectory("Run");
-            chipdata[0] += filePath.Substring(filePath.Length - 3, 2);
-
-            // Set up the FTDI and I2C connection
-            inittime.Start();
-            try {
-                InitializeConnection();
-            } catch (FTD2XX_NET.FTDI.FT_EXCEPTION exc) { // handles FTDI exceptions
-                Global.ShowError("FTDI exception: " + exc.Message);
-            }
-            inittime.Stop();
-            while (!SerializerTest()) {
-                // User has 3 options: 
-                //   Abort immediately quits program (in AskError), 
-                //   Retry continues the loop,
-                //   Ignore breaks the loop and continues the program
-                if(Global.AskError("Failed serializer test. Retry?") != DialogResult.Retry) break;
-            }
-            //SeeTest(5);
-            fullcalibtime.Start();
-            if (!DoCalibration(thisWorker, e)) { e.Result = false; return; }
-            fullcalibtime.Stop();
-
-            totaltime.Stop();
-            if(MessageBox.Show("Finished calibrating. Please turn on the waveform generator.",
-                "", MessageBoxButtons.OKCancel) == DialogResult.Cancel) { e.Cancel = true; return; }
-            totaltime.Start();
-            takedatatime.Start();
-            if (!TakeData()) { e.Result = false; Console.WriteLine("Error Taking Data"); return; }
-            takedatatime.Stop();
-
-            Console.WriteLine("Data Taken");
-            ffttime.Start();
-            AdcData[] adcData = FFT3(10, chipdata);
-            ffttime.Stop();
-            if (adcData == null) throw new Exception("No data returned from FFT3.");
-            WriteDataToFile();
-            WriteResult(adcData);
-            totaltime.Stop();
-            Console.WriteLine(String.Format("FTDI initialization took {0:F3}s  ({1:F2}%)", inittime.Elapsed.TotalSeconds, 100.0 * inittime.ElapsedMilliseconds / totaltime.ElapsedMilliseconds));
-            Console.WriteLine(String.Format("Full Calibration took {0:F3}s  ({1:F2}%)", fullcalibtime.Elapsed.TotalSeconds, 100.0 * fullcalibtime.ElapsedMilliseconds / totaltime.ElapsedMilliseconds));
-            Console.WriteLine(String.Format("\t'CheckCalibration' took {0:F3}s  ({1:F2}%)", checkcaltime.Elapsed.TotalSeconds, 100.0 * checkcaltime.ElapsedMilliseconds / totaltime.ElapsedMilliseconds));
-            Console.WriteLine(String.Format("\t'DoCalWork' took {0:F3}s  ({1:F2}%)", docaltime.Elapsed.TotalSeconds, 100.0 * docaltime.ElapsedMilliseconds / totaltime.ElapsedMilliseconds));
-            Console.WriteLine(String.Format("\t \t'SendCalibControl' took {0:F3}s  ({1:F2}%)", sendcalibconttime.Elapsed.TotalSeconds, 100.0 * sendcalibconttime.ElapsedMilliseconds / totaltime.ElapsedMilliseconds));
-            Console.WriteLine(String.Format("\t \t'GetADC' in calibration took {0:F3}s  ({1:F2}%)", getadccalibtime.Elapsed.TotalSeconds, 100.0 * getadccalibtime.ElapsedMilliseconds / totaltime.ElapsedMilliseconds));
-            Console.WriteLine(String.Format("'FFT3' took {0:F3}s  ({1:F2}%)", ffttime.Elapsed.TotalSeconds, 100.0 * ffttime.ElapsedMilliseconds / totaltime.ElapsedMilliseconds));
-            Console.WriteLine(String.Format("Taking Data took {0:F3}s  ({1:F2}%)", takedatatime.Elapsed.TotalSeconds, 100.0 * takedatatime.ElapsedMilliseconds / totaltime.ElapsedMilliseconds));
-            long unaccounted = totaltime.ElapsedMilliseconds - ffttime.ElapsedMilliseconds - fullcalibtime.ElapsedMilliseconds - inittime.ElapsedMilliseconds - takedatatime.ElapsedMilliseconds;
-            Console.WriteLine(String.Format("{0:F3} unaccounted for ({1:F2}%)", unaccounted / 1000.0, 100.0 * unaccounted / totaltime.ElapsedMilliseconds));
-            e.Result = true;
-            
-        } // End bkgWorker_DoWork
-
-        private void bkgWorker_RunWorkerCompleted (object sender, RunWorkerCompletedEventArgs e) {
+        private void BkgWorker_Completed (object sender, RunWorkerCompletedEventArgs e) {
+            runningWorkers.Remove((BackgroundWorker) sender);
             if (e.Error != null) {
                 Global.ShowError(e.Error.Message);
-                // ResetForm();
+                ResetGui();
+            } else if (e.Cancelled == true) {
+                //ResetGui();
             } else {
+                DialogResult answer = Global.AskError("Result of operation is " + e.Result.ToString() + ". Continue?");
+                if (answer == DialogResult.Retry) {
+                    runningWorkers.Add((BackgroundWorker) sender);
+                    ((BackgroundWorker) sender).RunWorkerAsync();
+                }
+                // Treat Ignore as Continue
             }
-            // Unset FTDI and connection, reset Form to initial state (except for data, that should still be shown)
-            runButton.Update(() => this.runButton.Enabled = true);
-        } // End bkgWorker_RunWorkerCompleted
-
+        }
         private void chipNumBox_TypeValidationCompleted (object sender, System.Windows.Forms.TypeValidationEventArgs e) {
             this.chipNumBox.BackColor = default(System.Drawing.Color);
             if (!e.IsValidInput) {

@@ -26,7 +26,7 @@ namespace Nevis14 {
         }
         // Display the error and ask if the user wants to keep going
         public static DialogResult AskError (string message) {
-            DialogResult answer = MessageBox.Show(message, "Error", MessageBoxButtons.AbortRetryIgnore);
+            DialogResult answer = MessageBox.Show(message, "", MessageBoxButtons.AbortRetryIgnore);
             if (answer == DialogResult.Abort) {
                 Application.Exit(); // Restart instead??
                 return DialogResult.None;

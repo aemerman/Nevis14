@@ -23,10 +23,12 @@ namespace Nevis14 {
         /// the contents of this method with the code editor.
         /// </summary>
         private void InitializeComponent () {
-            this.runButton = new System.Windows.Forms.Button();
-            this.commandBox = new System.Windows.Forms.TextBox();
-            this.bkgWorker = new System.ComponentModel.BackgroundWorker();
+            this.connectButton = new System.Windows.Forms.Button();
+            this.calibButton = new System.Windows.Forms.Button();
+            this.dataButton = new System.Windows.Forms.Button();
+            this.seeButton = new System.Windows.Forms.Button();
             this.cancelButton = new System.Windows.Forms.Button();
+            this.commandBox = new System.Windows.Forms.TextBox();
             this.dataBox = new System.Windows.Forms.TextBox();
             this.chipNumBox = new System.Windows.Forms.MaskedTextBox();
             this.chipNumLabel = new System.Windows.Forms.Label();
@@ -36,31 +38,45 @@ namespace Nevis14 {
             ((System.ComponentModel.ISupportInitialize)(this.fftBox)).BeginInit();
             this.SuspendLayout();
             // 
-            // runButton
+            // connectButton
             // 
-            this.runButton.Font = new System.Drawing.Font("Consolas", 12F, System.Drawing.FontStyle.Bold);
-            this.runButton.Location = new System.Drawing.Point(10, 40);
-            this.runButton.Name = "runButton";
-            this.runButton.Size = new System.Drawing.Size(180, 70);
-            this.runButton.TabIndex = 0;
-            this.runButton.Text = "Run";
-            this.runButton.UseVisualStyleBackColor = true;
-            this.runButton.Click += new System.EventHandler(this.runButton_Click);
+            this.connectButton.Location = new System.Drawing.Point(10, 40);
+            this.connectButton.Name = "connectButton";
+            this.connectButton.Size = new System.Drawing.Size(85, 35);
+            this.connectButton.TabIndex = 0;
+            this.connectButton.Text = "Connect";
+            this.connectButton.UseVisualStyleBackColor = true;
+            this.connectButton.Click += new System.EventHandler(this.connectButton_Click);
             // 
-            // commandBox
+            // calibButton
             // 
-            this.commandBox.Location = new System.Drawing.Point(605, 10);
-            this.commandBox.Multiline = true;
-            this.commandBox.Name = "commandBox";
-            this.commandBox.ReadOnly = true;
-            this.commandBox.Size = new System.Drawing.Size(385, 130);
-            this.commandBox.TabIndex = 1;
+            this.calibButton.Location = new System.Drawing.Point(100, 40);
+            this.calibButton.Name = "calibButton";
+            this.calibButton.Size = new System.Drawing.Size(85, 35);
+            this.calibButton.TabIndex = 11;
+            this.calibButton.Text = "Calibrate";
+            this.calibButton.UseVisualStyleBackColor = true;
+            this.calibButton.Click += new System.EventHandler(this.calibButton_Click);
             // 
-            // bkgWorker
+            // dataButton
             // 
-            this.bkgWorker.WorkerSupportsCancellation = true;
-            this.bkgWorker.DoWork += new System.ComponentModel.DoWorkEventHandler(this.bkgWorker_DoWork);
-            this.bkgWorker.RunWorkerCompleted += new System.ComponentModel.RunWorkerCompletedEventHandler(this.bkgWorker_RunWorkerCompleted);
+            this.dataButton.Location = new System.Drawing.Point(10, 80);
+            this.dataButton.Name = "dataButton";
+            this.dataButton.Size = new System.Drawing.Size(85, 35);
+            this.dataButton.TabIndex = 12;
+            this.dataButton.Text = "Take Data";
+            this.dataButton.UseVisualStyleBackColor = true;
+            this.dataButton.Click += new System.EventHandler(this.dataButton_Click);
+            // 
+            // seeButton
+            // 
+            this.seeButton.Location = new System.Drawing.Point(100, 80);
+            this.seeButton.Name = "seeButton";
+            this.seeButton.Size = new System.Drawing.Size(85, 35);
+            this.seeButton.TabIndex = 13;
+            this.seeButton.Text = "Run SEE";
+            this.seeButton.UseVisualStyleBackColor = true;
+            this.seeButton.Click += new System.EventHandler(this.seeButton_Click);
             // 
             // cancelButton
             // 
@@ -71,6 +87,15 @@ namespace Nevis14 {
             this.cancelButton.Text = "Cancel";
             this.cancelButton.UseVisualStyleBackColor = true;
             this.cancelButton.Click += new System.EventHandler(this.cancelButton_Click);
+            // 
+            // commandBox
+            // 
+            this.commandBox.Location = new System.Drawing.Point(605, 10);
+            this.commandBox.Multiline = true;
+            this.commandBox.Name = "commandBox";
+            this.commandBox.ReadOnly = true;
+            this.commandBox.Size = new System.Drawing.Size(385, 130);
+            this.commandBox.TabIndex = 1;
             // 
             // dataBox
             // 
@@ -85,7 +110,7 @@ namespace Nevis14 {
             // 
             this.chipNumBox.Location = new System.Drawing.Point(105, 10);
             this.chipNumBox.Name = "chipNumBox";
-            this.chipNumBox.Size = new System.Drawing.Size(85, 22);
+            this.chipNumBox.Size = new System.Drawing.Size(85, 29);
             this.chipNumBox.TabIndex = 7;
             this.chipNumBox.ValidatingType = typeof(int);
             this.chipNumBox.TypeValidationCompleted += new System.Windows.Forms.TypeValidationEventHandler(this.chipNumBox_TypeValidationCompleted);
@@ -131,9 +156,12 @@ namespace Nevis14 {
             // 
             // Form1
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 14F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(10F, 22F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1000, 750);
+            this.Controls.Add(this.seeButton);
+            this.Controls.Add(this.dataButton);
+            this.Controls.Add(this.calibButton);
             this.Controls.Add(this.resultBox);
             this.Controls.Add(this.fftBox);
             this.Controls.Add(this.chipNumLabel);
@@ -142,7 +170,7 @@ namespace Nevis14 {
             this.Controls.Add(this.cancelButton);
             this.Controls.Add(this.chipControl1);
             this.Controls.Add(this.commandBox);
-            this.Controls.Add(this.runButton);
+            this.Controls.Add(this.connectButton);
             this.Font = new System.Drawing.Font("Consolas", 9F);
             this.Name = "Form1";
             this.Text = "Nevis14 Test Interface";
@@ -154,11 +182,13 @@ namespace Nevis14 {
 
         #endregion
 
-        private System.Windows.Forms.Button runButton;
-        private System.Windows.Forms.TextBox commandBox;
-        private System.ComponentModel.BackgroundWorker bkgWorker;
-        private ChipControl chipControl1;
+        private System.Windows.Forms.Button connectButton;
+        private System.Windows.Forms.Button calibButton;
+        private System.Windows.Forms.Button dataButton;
+        private System.Windows.Forms.Button seeButton;
         private System.Windows.Forms.Button cancelButton;
+        private System.Windows.Forms.TextBox commandBox;
+        private ChipControl chipControl1;
         private System.Windows.Forms.TextBox dataBox;
         private System.Windows.Forms.MaskedTextBox chipNumBox;
         private System.Windows.Forms.Label chipNumLabel;

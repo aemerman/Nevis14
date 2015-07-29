@@ -60,3 +60,4 @@ C:\Users\atlas\Desktop\Nevis14_GitHubRepository\Nevis14\obj\Debug\Nevis14.ChipCo
 C:\Users\atlas\Desktop\Nevis14_GitHubRepository\Nevis14\obj\Debug\Nevis14.Form1.resources
 C:\Users\atlas\Desktop\Nevis14_GitHubRepository\Nevis14\obj\Debug\Nevis14.Properties.Resources.resources
 C:\Users\atlas\Desktop\Nevis14_GitHubRepository\Nevis14\obj\Debug\Nevis14.csproj.GenerateResource.Cache
+C:\Users\alexe_000\Documents\GitHub\Nevis14\Nevis14\obj\Debug\Nevis14.csprojResolveAssemblyReference.cache
