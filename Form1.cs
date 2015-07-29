@@ -115,10 +115,13 @@ namespace Nevis14 {
             }
             GetAdcData(1);
             if (bufferA.Count != 8) throw new Exception("Not enough data for serializer test.");
-            for (int i = 0; i < bufferA.Count; i+=2) {
-                Console.WriteLine(bufferA[i] + " " + bufferA[i + 1] + " ");
+            for (int i = 0; i < bufferA.Count; i += 2) {
                 if (bufferA[i] != ((1 << 7) + (7 << 1))) return false; // byte should be 8'b10001110
                 if (bufferA[i + 1] != (15 << 4)) return false; // byte should be 8'b11110000
+            }
+            for (uint iCh = 0; iCh < 4; iCh++) {
+                chipControl1.adcs[iCh].serializer = 0;
+                SendCalibControl(iCh);
             }
             return true;
         } // End SerializerTest
@@ -588,8 +591,6 @@ namespace Nevis14 {
 
         public void SeeTest (int waitTimeInSeconds) {
             adcFilter = 0; SendStatus();
-            adcFilter = 1; SendStatus(); // where does this go?
-            //SendPllResetCommand();
             for (uint iCh = 0; iCh < 4; iCh++) {
                 chipControl1.SafeInvoke(() => {
                     chipControl1.adcs[iCh].oFlag = 0;
@@ -597,9 +598,9 @@ namespace Nevis14 {
                 });
                 SendCalibControl(iCh);
             }
-            // Fill buffer
-            SendStartMeasurementCommand();
+            GetAdcData(1000); // Fill buffer
 
+            adcFilter = 1; SendStatus();
             for (uint iCh = 0; iCh < 4; iCh++) {
                 chipControl1.SafeInvoke(() => {
                     chipControl1.adcs[iCh].oFlag = 1;
@@ -607,26 +608,23 @@ namespace Nevis14 {
                 });
                 SendCalibControl(iCh);
             }
-            SendStartMeasurementCommand();
             SendPllResetCommand();
+            GetAdcData(1000); // Initialize SEE data taking
 
-            GetAdcData(1000); // Initialize SEE data taking?
-            System.Threading.Thread.Sleep(waitTimeInSeconds * 1000);
-            GetAdcData(1000);
-            List<string> lines = ParseSee(bufferA);
-            // Add new files or just append to the one? Will the file get too big??
-            // Could scan the lines while they're in buffer and only print the number
-            // of deviations. How long would that take (O(s), O(ms))?
-            File.AppendAllText(filePath + "seeData.txt", DateTime.Now + Environment.NewLine);
-            File.AppendAllLines(filePath + "seeData.txt", lines);
-            File.AppendAllText(filePath + "seeData.txt", Environment.NewLine);
+            string seePath = CreateNewDirectory("SEE");
+            string pllPath = CreateNewDirectory("PLL");
+            int i = 0;
+            while (!bkgWorker.CancellationPending) {
+                System.Threading.Thread.Sleep(waitTimeInSeconds * 1000);
+                GetAdcData(1000);
+                List<string> lines = ParseSee(bufferA);
+                File.AppendAllLines(filePath + seePath + "seeData_" + i.ToString().PadLeft(3,'0') + ".txt", lines);
 
-            GetPllData(10);
-            lines = ParseSee(bufferA);
-            File.AppendAllText(filePath + "pllData.txt", DateTime.Now + Environment.NewLine);
-            File.AppendAllLines(filePath + "pllData.txt", lines);
-            File.AppendAllText(filePath + "pllData.txt", Environment.NewLine);
-
+                GetPllData(10);
+                lines = ParseSee(bufferA);
+                File.AppendAllLines(filePath + pllPath + "pllData_" + i.ToString().PadLeft(3, '0') + ".txt", lines);
+                SendPllResetCommand();
+            }
             adcFilter = 0; SendStatus();
             return;
         } // End SeeTest
@@ -634,15 +632,15 @@ namespace Nevis14 {
         private List<string> ParseSee(List<byte> data) {
             if ((data.Count % 8) != 0) throw new Exception("SEE data size is not a multiple of 8.");
             List<string> lines = new List<string>();
-            string s;
+            StringBuilder s = new StringBuilder(72);
 
             for (int i = 0; i < data.Count; i += 8) {
-                s = "";
+                s.Clear();
                 for (int j = 0; j < 8; j++) {
                     // Show the binary numbers
-                    s += Convert.ToString(data[i + j], 2).PadLeft(8, '0') + " ";
+                    s.Append(Convert.ToString(data[i + j], 2).PadLeft(8, '0') + " ");
                 }
-                lines.Add(s);
+                lines.Add(s.ToString());
             }
             return lines;
         } // End ParseSee
@@ -687,6 +685,18 @@ namespace Nevis14 {
                 Environment.NewLine + port + " " + s);*/
         } // End WriteCommandToGui
 
+        public string CreateNewDirectory (string prefix, int width = 2) {
+            int dirNum = 0;
+            string path = prefix + dirNum.ToString().PadLeft(width, '0');
+            while (System.IO.Directory.Exists(filePath + path)) {
+                dirNum++;
+                path = path.Remove(path.Length - width);
+                path += dirNum.ToString().PadLeft(width, '0');
+            }
+            System.IO.Directory.CreateDirectory(filePath + path);
+            return path + "/";
+        }
+
         private void runButton_Click (object sender, EventArgs e) {
             // The background worker will only be started if there is a valid chip number (any int)
             runButton.Update(() => runButton.Enabled = false);
@@ -720,21 +730,9 @@ namespace Nevis14 {
             // Create folder to store output files, if it doesn't already exist
             if (!System.IO.Directory.Exists(filePath)) {
                 System.IO.Directory.CreateDirectory(filePath);
-                System.IO.Directory.CreateDirectory(filePath + "Run00/");
-                filePath += "Run00/";
-                chipdata[0] += "0";
-            } else {
-                int run = 1;
-                string runFolder = filePath + "Run" + Convert.ToString(run).PadLeft(2, '0');
-                while (System.IO.Directory.Exists(runFolder)) {
-                    run++;
-                    runFolder = runFolder.Remove(runFolder.Length - 2);
-                    runFolder += Convert.ToString(run).PadLeft(2, '0');
-                }
-                System.IO.Directory.CreateDirectory(runFolder);
-                filePath = runFolder + "/";
-                chipdata[0] += run.ToString();
             }
+            filePath += CreateNewDirectory("Run");
+            chipdata[0] += filePath.Substring(filePath.Length - 3, 2);
 
             // Set up the FTDI and I2C connection
             inittime.Start();
@@ -744,15 +742,21 @@ namespace Nevis14 {
                 Global.ShowError("FTDI exception: " + exc.Message);
             }
             inittime.Stop();
+            while (!SerializerTest()) {
+                // User has 3 options: 
+                //   Abort immediately quits program (in AskError), 
+                //   Retry continues the loop,
+                //   Ignore breaks the loop and continues the program
+                if(Global.AskError("Failed serializer test. Retry?") != DialogResult.Retry) break;
+            }
             //SeeTest(5);
             fullcalibtime.Start();
             if (!DoCalibration(thisWorker, e)) { e.Result = false; return; }
             fullcalibtime.Stop();
 
             totaltime.Stop();
-            DialogResult answer = MessageBox.Show("Finished calibrating. Please turn on the waveform generator.",
-                "", MessageBoxButtons.OKCancel);
-            if (answer == DialogResult.Cancel) { e.Cancel = true; return; }
+            if(MessageBox.Show("Finished calibrating. Please turn on the waveform generator.",
+                "", MessageBoxButtons.OKCancel) == DialogResult.Cancel) { e.Cancel = true; return; }
             totaltime.Start();
             takedatatime.Start();
             if (!TakeData()) { e.Result = false; Console.WriteLine("Error Taking Data"); return; }

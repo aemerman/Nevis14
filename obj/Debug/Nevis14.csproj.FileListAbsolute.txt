@@ -36,7 +36,6 @@ C:\Users\alexe_000\Documents\GitHub\Nevis14\Nevis14\obj\Debug\Nevis14.exe
 C:\Users\alexe_000\Documents\GitHub\Nevis14\Nevis14\obj\Debug\Nevis14.pdb
 C:\Users\alexe_000\Documents\GitHub\Nevis14\Nevis14\bin\Debug\Nevis14.exe
 C:\Users\alexe_000\Documents\GitHub\Nevis14\Nevis14\bin\Debug\Nevis14.pdb
-C:\Users\alexe_000\Documents\GitHub\Nevis14\Nevis14\obj\Debug\Nevis14.csprojResolveAssemblyReference.cache
 C:\Users\alexe_000\Documents\GitHub\Nevis14\Nevis14\obj\Debug\Nevis14.ChipControl.resources
 C:\Users\alexe_000\Documents\GitHub\Nevis14\Nevis14\obj\Debug\Nevis14.Form1.resources
 C:\Users\alexe_000\Documents\GitHub\Nevis14\Nevis14\obj\Debug\Nevis14.Properties.Resources.resources
