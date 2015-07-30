@@ -636,18 +636,50 @@ namespace Nevis14 {
                 GetAdcData(1000);
                 List<string> seeData = bufferA.To16BitBinary();
                 dataBox.Update(() => dataBox.Text = seeData.ToSeparatedString());
-                seeWriter.BeginInvoke(filePath + seePath + "seeData_" + i.ToString().PadLeft(3,'0') + ".txt", seeData, null, null);
+                List<string> seeErrors;
+                if ((seeErrors = CheckSeeData(seeData)).Count > 0){
+                seeWriter.BeginInvoke(filePath + seePath + "seeData_" + i.ToString().PadLeft(3,'0') + ".txt", seeErrors, null, null);
+                }
 
                 GetPllData(10);
                 List<string> pllData = bufferA.To16BitBinary();
-                pllWriter.BeginInvoke(filePath + pllPath + "pllData_" + i.ToString().PadLeft(3, '0') + ".txt", pllData, null, null);
+                List<string> pllErrors;
+                if ((pllErrors = CheckPllData(pllData)).Count > 0)
+                {
+                    pllWriter.BeginInvoke(filePath + pllPath + "pllData_" + i.ToString().PadLeft(3, '0') + ".txt", pllErrors, null, null);
+                }
                 SendPllResetCommand();
                 i++;
             }
             adcFilter = 0; SendStatus();
             e.Cancel = true;
         } // End SeeTest
-
+        private List<string> CheckSeeData(List<string> data)
+        {
+            List<string> errors = new List<string>();
+            foreach (string sample in data)
+            {
+                if (sample == "") Console.WriteLine(data.IndexOf(sample) + " is empty");
+                else if (sample != "10001110 11110000 10001110 11110000 10001110 11110000 10001110 11110000 ")
+                {
+                    errors.Add("Line " + data.IndexOf(sample) + ": " + sample);
+                }
+            }
+            return errors;
+        }
+        private List<string> CheckPllData(List<string> data)
+        {
+            List<string> errors = new List<string>();
+            foreach (string sample in data)
+            {
+                if (sample == "") Console.WriteLine(data.IndexOf(sample) + " is empty");
+                else if (sample != "00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 ")
+                {
+                    errors.Add("Line " + data.IndexOf(sample) + ": " + sample);
+                }
+            }
+            return errors;
+        }
         private List<string> ParseSee(List<byte> data) {
             if ((data.Count % 8) != 0) throw new Exception("SEE data size is not a multiple of 8.");
             List<string> lines = new List<string>();
