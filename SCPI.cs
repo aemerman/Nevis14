@@ -16,7 +16,7 @@ namespace Nevis14
 
         public SCPI()
         {
-            scpitalker = new MessageBasedSession("TCPIP::169.254.2.20::5025::SOCKET");
+            scpitalker = new MessageBasedSession("TCPIP::169.254.2.20");
         }
 
         public SCPI(MessageBasedSession talker)
@@ -81,6 +81,16 @@ namespace Nevis14
             return true;
         }
 
+        public bool Output()
+        {
+            try
+            {
+                string s = WriteToSCPI("OUTP?");
+                return s.Contains("1");
+            }
+            catch { return false; }
+        }
+
         public string ReadFromSCPI()
         {
             string responseData = scpitalker.ReadString();
@@ -88,18 +98,17 @@ namespace Nevis14
             return responseData;
         }
 
-        public void WriteToSCPI(string s)
+        public string WriteToSCPI(string s)
         {
             //Byte[] data = System.Text.Encoding.ASCII.GetBytes(s);
-            Console.WriteLine(s);
             scpitalker.Write(s);
-            if (s.IndexOf('?') >= 0)
-                ReadFromSCPI();
             Byte[] lf = {(Byte)'\n'};
             scpitalker.Write(lf);
 
             if (s.IndexOf("?") >=0 )
-                ReadFromSCPI();
+                return ReadFromSCPI();
+
+            return "";
         }
     }
 }

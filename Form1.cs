@@ -735,6 +735,13 @@ namespace Nevis14 {
         private void bkgWorker_DoWork (object sender, DoWorkEventArgs e) {
             BackgroundWorker thisWorker = sender as BackgroundWorker;
             totaltime.Start();
+            try
+            {
+                functiongenerator.OutputOff();
+                while (functiongenerator.Output()) { }      // Waits until signal output is off
+            }
+            catch
+            {}
             // Normally the RunWorkerCompleted method would handle exceptions, but
             // that doesn't work in the debugger. Will the undergrads be using a
             // release version?
@@ -762,12 +769,7 @@ namespace Nevis14 {
                 if(Global.AskError("Failed serializer test. Retry?") != DialogResult.Retry) break;
             }
             //SeeTest(5);
-            try
-            {
-                functiongenerator.OutputOff();
-            }
-            catch
-            {}
+
 
             fullcalibtime.Start();
             if (!DoCalibration(thisWorker, e)) { e.Result = false; return; }
@@ -776,11 +778,12 @@ namespace Nevis14 {
             try
             {
                 functiongenerator.ApplySin(signalFreq, signalAmp, 0);
+                while (!functiongenerator.Output()) { } // Waits until signal output is on
             }
             catch
             {
                 totaltime.Stop();
-                if (MessageBox.Show("Finished calibrating. Please turn on the waveform generator.",
+                if (MessageBox.Show("Finished calibrating. Please turn on the waveform generator manually.",
                     "", MessageBoxButtons.OKCancel) == DialogResult.Cancel) { e.Cancel = true; return; }
                 totaltime.Start();
             }
