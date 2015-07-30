@@ -761,20 +761,28 @@ namespace Nevis14 {
                 if(Global.AskError("Failed serializer test. Retry?") != DialogResult.Retry) break;
             }
             //SeeTest(5);
-            functiongenerator.OutputOff();
+            try
+            {
+                functiongenerator.OutputOff();
+            }
+            catch
+            {}
+
             fullcalibtime.Start();
             if (!DoCalibration(thisWorker, e)) { e.Result = false; return; }
             fullcalibtime.Stop();
 
-            functiongenerator.ApplySin(signalFreq, signalAmp, 0);
-            /*DialogResult answer = MessageBox.Show("Finished calibrating. Please turn on the waveform generator.",
-                "", MessageBoxButtons.OKCancel);
-            if (answer == DialogResult.Cancel) { e.Cancel = true; return; }*/
-
-            totaltime.Stop();
-            if(MessageBox.Show("Finished calibrating. Please turn on the waveform generator.",
-                "", MessageBoxButtons.OKCancel) == DialogResult.Cancel) { e.Cancel = true; return; }
-            totaltime.Start();
+            try
+            {
+                functiongenerator.ApplySin(signalFreq, signalAmp, 0);
+            }
+            catch
+            {
+                totaltime.Stop();
+                if (MessageBox.Show("Finished calibrating. Please turn on the waveform generator.",
+                    "", MessageBoxButtons.OKCancel) == DialogResult.Cancel) { e.Cancel = true; return; }
+                totaltime.Start();
+            }
 
             takedatatime.Start();
             if (!TakeData()) { e.Result = false; Console.WriteLine("Error Taking Data"); return; }
