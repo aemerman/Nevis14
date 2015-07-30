@@ -52,6 +52,7 @@ namespace Nevis14 {
         int samplesUsedForCalib = samplesForCalib - 20;
         const int signalFreq = 5006510; // Hz
         const double signalAmp = 10.0; // V
+        const string signalIP = "169.254.2.20";
 
         // Variables used to keep track of the data being output
         // ------------
@@ -900,7 +901,7 @@ namespace Nevis14 {
             {
                 try
                 {
-                    scpitalker = new MessageBasedSession("TCPIP::169.254.133.12");
+                    scpitalker = new MessageBasedSession("TCPIP::" + signalIP);
                     functiongenerator = new SCPI(scpitalker);
                 }
                 catch (System.ArgumentException)
