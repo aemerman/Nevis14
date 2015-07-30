@@ -9,6 +9,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.IO;
+using NationalInstruments.VisaNS;
 
 namespace Nevis14 {
     // This file contains the main functions used by the code
@@ -49,6 +50,8 @@ namespace Nevis14 {
 
         const int samplesForCalib = 3000;
         int samplesUsedForCalib = samplesForCalib - 20;
+        const int signalFreq = 5006510; // Hz
+        const double signalAmp = 10.0; // V
 
         // Variables used to keep track of the data being output
         // ------------
@@ -79,6 +82,7 @@ namespace Nevis14 {
 
         Ftdi ftdi;
 
+        // Stopwatches for Timing Controls
         Stopwatch fullcalibtime = new Stopwatch();
         Stopwatch docaltime = new Stopwatch();
         Stopwatch sendcalibconttime = new Stopwatch();
@@ -89,11 +93,16 @@ namespace Nevis14 {
         Stopwatch takedatatime = new Stopwatch();
         Stopwatch inittime = new Stopwatch();
 
+        // Used to talk to the Signal Generator
+        MessageBasedSession scpitalker;
+        SCPI functiongenerator;
+
 
 
         // begin functions
-        public Form1 () { 
+        public Form1 () {
             InitializeComponent();
+            SCPIconnect();
         } // End constructor 
 
         private void InitializeConnection () {
@@ -700,6 +709,8 @@ namespace Nevis14 {
         private void runButton_Click (object sender, EventArgs e) {
             // The background worker will only be started if there is a valid chip number (any int)
             runButton.Update(() => runButton.Enabled = false);
+            if (!SCPIconnect())
+                return;
             if (this.chipNumBox.Text == "" || this.chipNumBox.BackColor == System.Drawing.Color.Red) {
                 MessageBox.Show("Invalid chip id. Please enter the number of the chip you are testing before running the code.");
             } else {
@@ -750,14 +761,21 @@ namespace Nevis14 {
                 if(Global.AskError("Failed serializer test. Retry?") != DialogResult.Retry) break;
             }
             //SeeTest(5);
+            functiongenerator.OutputOff();
             fullcalibtime.Start();
             if (!DoCalibration(thisWorker, e)) { e.Result = false; return; }
             fullcalibtime.Stop();
+
+            functiongenerator.ApplySin(signalFreq, signalAmp, 0);
+            /*DialogResult answer = MessageBox.Show("Finished calibrating. Please turn on the waveform generator.",
+                "", MessageBoxButtons.OKCancel);
+            if (answer == DialogResult.Cancel) { e.Cancel = true; return; }*/
 
             totaltime.Stop();
             if(MessageBox.Show("Finished calibrating. Please turn on the waveform generator.",
                 "", MessageBoxButtons.OKCancel) == DialogResult.Cancel) { e.Cancel = true; return; }
             totaltime.Start();
+
             takedatatime.Start();
             if (!TakeData()) { e.Result = false; Console.WriteLine("Error Taking Data"); return; }
             takedatatime.Stop();
@@ -867,5 +885,22 @@ namespace Nevis14 {
             inittime.Reset();
             
         } // End resetGui
+
+        public bool SCPIconnect()
+        {
+            if (scpitalker == null)
+            {
+                try
+                {
+                    scpitalker = new MessageBasedSession("TCPIP::169.254.133.12");
+                    functiongenerator = new SCPI(scpitalker);
+                }
+                catch (System.ArgumentException)
+                {
+                    MessageBox.Show("Check your signal generator connection settings");
+                }
+            }
+            return scpitalker != null;
+        }
     } // End Form1
 }
