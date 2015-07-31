@@ -8,6 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Windows.Forms.DataVisualization.Charting;
 using System.IO;
 using NationalInstruments.VisaNS;
 
@@ -574,7 +575,7 @@ namespace Nevis14 {
         }   // End CheckCalibration
 
         /// <summary>
-        /// Simple method to take 6200 data points. Appends the data
+        /// Simple method to take 12400 data points. Appends the data
         /// to the file adcData.txt, and prints it to the GUI
         /// </summary>
         /// <returns></returns>
@@ -584,17 +585,19 @@ namespace Nevis14 {
 
             WriteDataToGui(bufferA);
 
-            StreamWriter adcwrite = new StreamWriter(filePath + "adcData.txt");
-            StringBuilder s = new StringBuilder("", bufferA.Count * 3);
-            for (int i = 0; i < bufferA.Count; i += 8) {
-                for (int j = 0; j < 8; j += 2) {
-                    s.Append(((bufferA[i + j] << 8) + bufferA[i + j + 1]) + " ");
+            using (StreamWriter adcwrite = new StreamWriter(filePath + "adcData.txt"))
+            {
+                StringBuilder s = new StringBuilder("", bufferA.Count * 3);
+                for (int i = 0; i < bufferA.Count; i += 8)
+                {
+                    for (int j = 0; j < 8; j += 2)
+                    {
+                        s.Append(((bufferA[i + j] << 8) + bufferA[i + j + 1]) + " ");
+                    }
+                    s.Append(Environment.NewLine);
                 }
-                s.Append(Environment.NewLine);
+                adcwrite.Write(s);
             }
-            adcwrite.Write(s);
-            adcwrite.Close();
-
             //System.IO.File.AppendAllText(filePath + "adcData.txt", s);
             return true;
         } // End TakeData
@@ -716,6 +719,8 @@ namespace Nevis14 {
                 MessageBox.Show("Invalid chip id. Please enter the number of the chip you are testing before running the code.");
             } else {
                 ResetGui();
+                if (ftdi != null)
+                    ftdi.Close();
                 filePath += "Nevis14_" + chipNumBox.Text.PadLeft(5, '0') + "/";
                 bkgWorker.RunWorkerAsync();
             }
@@ -791,12 +796,26 @@ namespace Nevis14 {
             takedatatime.Start();
             if (!TakeData()) { e.Result = false; Console.WriteLine("Error Taking Data"); return; }
             takedatatime.Stop();
+            try
+            {
+                functiongenerator.OutputOff();
+            }
+            catch { }
 
             Console.WriteLine("Data Taken");
             ffttime.Start();
-            AdcData[] adcData = FFT3(10, chipdata);
+            AdcData[] adcData = FFT3(10);
             ffttime.Stop();
+
             if (adcData == null) throw new Exception("No data returned from FFT3.");
+            else
+            {
+                for (int isig = 0; isig < 4; isig++)
+                {
+                    chipdata[isig + 1] += adcData[isig].Print();
+                }
+            }
+
             WriteDataToFile();
             WriteResult(adcData);
             totaltime.Stop();
@@ -882,8 +901,6 @@ namespace Nevis14 {
             commandBox.Update(() => commandBox.Clear());
             dataBox.Update(() => dataBox.Clear());
             fftBox.Update(() => fftBox.Image = null);
-            if(ftdi != null)
-                ftdi.Close();
 
             // Reset Timers
             totaltime.Reset();
@@ -909,10 +926,74 @@ namespace Nevis14 {
                 }
                 catch (System.ArgumentException)
                 {
-                    MessageBox.Show("Check your signal generator connection settings");
+                    if (Global.AskError("Check your signal generator connection settings") == DialogResult.Retry)
+                        SCPIconnect();
                 }
             }
             return scpitalker != null;
+        } // End SCPIconnect
+
+        public void VoltageRangeTest(double ampStart, double ampStep)
+        {
+            try
+            {
+                functiongenerator.OutputOff();
+            }           
+            catch (System.ArgumentException)
+            {
+                MessageBox.Show("This test is not available without a connection to the signal generator.");
+                return;
+            }
+
+            AdcData[] data;
+            Chart voltagechart = new Chart();
+            Series[] enobdata = new Series[4];
+
+            ResetGui();
+            filePath += CreateNewDirectory("Volt");
+
+            // --Chart Formatting--
+            voltagechart.Size = new Size(690, 595);
+            for (int channel = 0; channel < 4; channel++)
+            {
+                voltagechart.ChartAreas.Add(new ChartArea());
+                voltagechart.ChartAreas[channel].AxisX.Minimum = 0;
+                voltagechart.ChartAreas[channel].AxisX.Maximum = signalAmp * 1.1;
+                voltagechart.ChartAreas[channel].AxisX.Title = "Signal Amplitude [V]";
+                voltagechart.ChartAreas[channel].AxisY.Minimum = 0;
+                voltagechart.ChartAreas[channel].AxisY.Maximum = 12;
+                voltagechart.ChartAreas[channel].AxisY.Title = "ENOB";
+
+                enobdata[channel] = new Series{
+                    Color = Color.Red,
+                    IsVisibleInLegend = false,
+                    IsXValueIndexed = true,
+                    MarkerStyle = MarkerStyle.Square,
+                    MarkerColor = Color.Red,
+                    MarkerBorderWidth = 0,
+                    ChartArea = chart1.ChartAreas[channel].Name,
+                    ChartType = SeriesChartType.Point
+                };
+            }// End chart formatting
+
+            for (double amp = ampStart; amp < signalAmp; amp += ampStep)
+            {
+                functiongenerator.ApplySin(signalFreq, amp, 0);
+                TakeData();
+                functiongenerator.OutputOff();
+                data = FFT3(10);
+                for (int channel = 0; channel < 4; channel++)
+                {
+                    enobdata[channel].Points.AddXY(amp, data[channel].enob);
+                }
+            }
+            voltagechart.SaveImage(filePath + "ENOB_vs_amplitude.png", ChartImageFormat.Png);
+        }
+
+        private void voltagetestbutton_Click(object sender, EventArgs e)
+        {
+            VoltageRangeTest(1.0, 0.01);
+            fftBox.Update(() => fftBox.Image = Image.FromFile(filePath + "ENOB_vs_amplitude.png"));
         }
     } // End Form1
 }

@@ -28,14 +28,14 @@ namespace Nevis14 {
         public static DialogResult AskError (string message) {
             DialogResult answer = MessageBox.Show(message, "Error", MessageBoxButtons.AbortRetryIgnore);
             if (answer == DialogResult.Abort) {
-                Application.Exit(); // Restart instead??
+                Environment.Exit(-1); // Restart instead??
                 return DialogResult.None;
             } else return answer;
         }
         // Display the error, then close the program
         public static void FatalError (string message) {
             MessageBox.Show(message, "Fatal Error");
-            Application.Exit();
+            Environment.Exit(-1);
         }
         // Convert input a to a number with base b
         // If a width is provided it will pad the string

@@ -34,7 +34,7 @@ namespace Nevis14 {
         } // End struct AdcData
 
 
-        public AdcData[] FFT3(double freq, string[] chipdata)
+        public AdcData[] FFT3(double freq)
         {
             DateTime time;
             DateTime start = DateTime.Now;
@@ -182,10 +182,7 @@ namespace Nevis14 {
             chart1.SaveImage(filePath + "fft.png", ChartImageFormat.Png); // Save the FFT Charts to OUTPUTIN
 
             //----Write QA data to file----
-            for (int isig = 0; isig < 4; isig++)
-            {
-                chipdata[isig + 1] += adcData[isig].Print();
-            }
+
 
             Console.WriteLine(String.Format("Full FFT3 Took {0} Seconds", (DateTime.Now - start).TotalSeconds));
 
@@ -415,6 +412,7 @@ namespace Nevis14 {
                     }
                 }
             }
+            file.Close();
             return signalHisto;
         }
         

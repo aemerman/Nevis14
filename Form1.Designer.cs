@@ -23,7 +23,6 @@ namespace Nevis14 {
         /// the contents of this method with the code editor.
         /// </summary>
         private void InitializeComponent () {
-            this.runButton = new System.Windows.Forms.Button();
             this.commandBox = new System.Windows.Forms.TextBox();
             this.bkgWorker = new System.ComponentModel.BackgroundWorker();
             this.cancelButton = new System.Windows.Forms.Button();
@@ -33,19 +32,10 @@ namespace Nevis14 {
             this.fftBox = new System.Windows.Forms.PictureBox();
             this.resultBox = new System.Windows.Forms.TextBox();
             this.chipControl1 = new Nevis14.ChipControl();
+            this.voltagetestbutton = new System.Windows.Forms.Button();
+            this.runButton = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.fftBox)).BeginInit();
             this.SuspendLayout();
-            // 
-            // runButton
-            // 
-            this.runButton.Font = new System.Drawing.Font("Consolas", 12F, System.Drawing.FontStyle.Bold);
-            this.runButton.Location = new System.Drawing.Point(10, 40);
-            this.runButton.Name = "runButton";
-            this.runButton.Size = new System.Drawing.Size(180, 70);
-            this.runButton.TabIndex = 0;
-            this.runButton.Text = "Run";
-            this.runButton.UseVisualStyleBackColor = true;
-            this.runButton.Click += new System.EventHandler(this.runButton_Click);
             // 
             // commandBox
             // 
@@ -64,7 +54,7 @@ namespace Nevis14 {
             // 
             // cancelButton
             // 
-            this.cancelButton.Location = new System.Drawing.Point(65, 115);
+            this.cancelButton.Location = new System.Drawing.Point(13, 114);
             this.cancelButton.Name = "cancelButton";
             this.cancelButton.Size = new System.Drawing.Size(70, 25);
             this.cancelButton.TabIndex = 4;
@@ -129,11 +119,33 @@ namespace Nevis14 {
             this.chipControl1.slvsControl = ((uint)(0u));
             this.chipControl1.TabIndex = 3;
             // 
+            // voltagetestbutton
+            // 
+            this.voltagetestbutton.Location = new System.Drawing.Point(89, 114);
+            this.voltagetestbutton.Name = "voltagetestbutton";
+            this.voltagetestbutton.Size = new System.Drawing.Size(101, 24);
+            this.voltagetestbutton.TabIndex = 11;
+            this.voltagetestbutton.Text = "Voltage Test";
+            this.voltagetestbutton.UseVisualStyleBackColor = true;
+            this.voltagetestbutton.Click += new System.EventHandler(this.voltagetestbutton_Click);
+            // 
+            // runButton
+            // 
+            this.runButton.Font = new System.Drawing.Font("Consolas", 12F, System.Drawing.FontStyle.Bold);
+            this.runButton.Location = new System.Drawing.Point(10, 40);
+            this.runButton.Name = "runButton";
+            this.runButton.Size = new System.Drawing.Size(180, 70);
+            this.runButton.TabIndex = 0;
+            this.runButton.Text = "Run";
+            this.runButton.UseVisualStyleBackColor = true;
+            this.runButton.Click += new System.EventHandler(this.runButton_Click);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 14F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1000, 750);
+            this.Controls.Add(this.voltagetestbutton);
             this.Controls.Add(this.resultBox);
             this.Controls.Add(this.fftBox);
             this.Controls.Add(this.chipNumLabel);
@@ -154,7 +166,6 @@ namespace Nevis14 {
 
         #endregion
 
-        private System.Windows.Forms.Button runButton;
         private System.Windows.Forms.TextBox commandBox;
         private System.ComponentModel.BackgroundWorker bkgWorker;
         private ChipControl chipControl1;
@@ -164,6 +175,8 @@ namespace Nevis14 {
         private System.Windows.Forms.Label chipNumLabel;
         private System.Windows.Forms.PictureBox fftBox;
         private System.Windows.Forms.TextBox resultBox;
+        private System.Windows.Forms.Button voltagetestbutton;
+        private System.Windows.Forms.Button runButton;
     }
 }
 
