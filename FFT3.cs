@@ -7,6 +7,7 @@ using System.Drawing;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.IO;
+using System.Diagnostics;
 
 namespace Nevis14 {
     public partial class Form1 : Form {
@@ -15,6 +16,8 @@ namespace Nevis14 {
         const int sampLength = 12288; //Number of data points used
         const string chipyear = "14";
         double sampFreq;     //Sampling Frequency
+        double freq;
+        int numchannels;
         Chart chart1;
 
         public struct AdcData {
@@ -34,8 +37,10 @@ namespace Nevis14 {
         } // End struct AdcData
 
 
-        public AdcData[] FFT3(double freq)
+        public AdcData[] FFT3(double infreq, int channels = 4)
         {
+            numchannels = channels;
+            freq = infreq;
             DateTime time;
             DateTime start = DateTime.Now;
             chart1 = new Chart();
@@ -62,9 +67,7 @@ namespace Nevis14 {
 
             InitializeChart();
 
-            time = DateTime.Now;
             double[][] signalHisto = ReadData();
-            Console.WriteLine(String.Format("Reading Data Took {0} Seconds", (DateTime.Now - time).TotalSeconds));
 
             FormatChart("sig");
             chart1.SaveImage(filePath + "signal.png", ChartImageFormat.Png);
@@ -77,121 +80,22 @@ namespace Nevis14 {
             InitializeChart();
 
             // Start doing FFTs for each channel
-            for (int isig = 0; isig < 4; isig++)
+            for (int isig = 0; isig < numchannels; isig++)
             {
-                int numPoints = 0;      //Keeping track of pts in FFT
-                int ithData = 0;        //For help looping through FFT
-                int numHarm = -1;       //Counting how many harmonics found
-
-                Dictionary<double, double> theData = new Dictionary<double, double>();  //Keeping track of level of each frequency
-
-                double binCont;         // Help with filling FFT
-                double sum2 = 0.0;           // For Calculating SINAD
-                double bin1, binMax = 0.0;    // For Manipulating output of FFT
-                double[] aHarmFreq = new double[150];   //Aliased Harmonics
-                double fourierFreq, tempFreq = 0;  //Help with looping through dictionary
-                double noDistSum2 = 0;
-
-                //----Do the FFT----//
-
                 double[] fourierHisto = DoFFT(signalHisto[isig]);
-
-                //----Find the Second Largest Value----// 
-                bin1 = fourierHisto[0];         // bin1 has the largest value, however
-                fourierHisto[0] = 0;            // that isn't actually part of our data.
-                fourierHisto[sampLength / 2] = 0;
-                binMax = fourierHisto.Max();        // The max value, our signal, is actually
-                fourierHisto[0] = bin1;             // the second largest value, now in binMax.
-
-  
-                chart1.Series[isig].Points.AddXY(0, 20 * Math.Log10(Math.Abs(fourierHisto[1]) / Math.Abs(binMax))); // Only added to make plot look nicer
-                //----Normalize all the points to the maximum----//
-                for (int i = 1; i < (sampLength / 2); i++)
-                {
-                    binCont = Math.Abs(fourierHisto[i]) / Math.Abs(binMax); // Normalizing to the maximum
-                    theData[20 * Math.Log10(binCont)] = ((i) * sampFreq / sampLength);
-                    chart1.Series[isig].Points.AddXY((i) * sampFreq / sampLength, 20 * Math.Log10(binCont));
-                    if (binCont != 1.0)
-                    {            // This is all points except the signal
-                        numPoints++;
-                        sum2 += binCont * binCont;
-                    }
-                }
-
-
-                noDistSum2 += sum2;     // This is so we can make parallel calculations subtracting harmonics
-
-                //----Find Relevant Harmonics----//
-                // Harmonics occur at |+/- (k*sampFreq) +/- (n*signalFreq)|
-                // There will be overcounting if we let both k and n go +/-
-                // Keeping k positive, and for k=0 keeping n positive,thedata there is no overcounting
-
-                for (int k = 0; k <= 20; k++)
-                {
-                    for (int ord = -55; ord <= 55; ord++)
-                    {
-                        if (k > 0 || ord >= 0)
-                            tempFreq = Math.Abs(k * sampFreq + ord * freq);
-                        if (tempFreq != freq && tempFreq < sampFreq / 2 && tempFreq > 0)
-                        {     // Limits range of interesting harmonics
-                            numHarm++;
-                            aHarmFreq[numHarm] = tempFreq;
-                        }
-                    }
-                }
-
-                //----Printing the Highest Readings and Corresponding Freq----//
-
-                var amps = theData.Keys.ToList();
-                amps.Sort();
-
-                foreach (double normAmp in amps)
-                {
-                    fourierFreq = theData[normAmp];
-                    if ((ithData > (numPoints - 6)) && (ithData < numPoints))
-                    {
-                        adcData[isig].outFreq[numPoints - 1 - ithData] = String.Format("  {0:F2},   {1:F2}", fourierFreq, normAmp);
-                    }
-                    if (ithData == numPoints - 1)
-                    {
-                        adcData[isig].sfdr = normAmp;
-                        // The SFDR is distance from signal (normalized to zero) to second largest
-                        // value. This will be the normalized amplitude of the second last point
-                        // since the last point is the signal (at 0 dB).
-                    }
-                    // This will remove the relevant harmonics so we can calculate SNR
-                    for (int i = 0; i <= numHarm; i++)
-                    {
-                        if (Math.Abs(fourierFreq - aHarmFreq[i]) < 0.00001)
-                        {
-                            noDistSum2 -= Math.Pow(10, normAmp / 10);
-                        }
-                    }
-                    ithData++;
-                }
-
-                //----Calculating Characteristic Variables----// 
-                adcData[isig].sinadNoHarm = 10 * Math.Log10(noDistSum2);
-                adcData[isig].sinad = 10 * Math.Log10(sum2);
-                adcData[isig].enob = (-adcData[isig].sinad - 1.76) / 6.02;
+                adcData[isig] = DoQACalculations(fourierHisto, isig);
             }   //End FFT
 
             FormatChart("FFT");
             AddDataToChart(adcData);
             chart1.Size = new Size(690, 595);
-            chart1.SaveImage(filePath + "fft.png", ChartImageFormat.Png); // Save the FFT Charts to OUTPUTIN
-
-            //----Write QA data to file----
-
-
-            Console.WriteLine(String.Format("Full FFT3 Took {0} Seconds", (DateTime.Now - start).TotalSeconds));
-
+            chart1.SaveImage(filePath + "fft.png", ChartImageFormat.Png); // Save the FFT Charts
             return adcData;
         }
 
         private void FormatChart(string opt)
         {
-            for (int isig = 0; isig < 4; isig++)
+            for (int isig = 0; isig < numchannels; isig++)
             {
                 Font axisFont = new Font(FontFamily.GenericSansSerif, 10);
                 if (opt.Contains("FFT")){
@@ -313,7 +217,7 @@ namespace Nevis14 {
         private void AddDataToChart(AdcData[] adcData)
         {
                                 // Add QA information to the chart area
-            for (int isig = 0; isig < 4; isig++)
+            for (int isig = 0; isig < numchannels; isig++)
             {
                 var fftInfo = new Legend
                 {
@@ -351,7 +255,7 @@ namespace Nevis14 {
             ResetChart(chart1);
             chart1.Titles.Add(DateTime.Now.ToString());
 
-            for (int isig = 0; isig < 4; isig++)
+            for (int isig = 0; isig < numchannels; isig++)
             {
                 chart1.ChartAreas.Add(new ChartArea());
                 Title atlastitle = new Title
@@ -379,10 +283,10 @@ namespace Nevis14 {
         private double[][] ReadData()
         {
             double[][] signalHisto = new double[4][];
-            for (int isig = 0; isig < 4; isig++)
+            for (int isig = 0; isig < numchannels; isig++)
                 signalHisto[isig] = new double[sampLength];
 
-            System.IO.StreamReader file = null;
+            /*System.IO.StreamReader file = null;
             string adcDataFile = filePath + "adcData.txt";
             try
             {
@@ -392,7 +296,7 @@ namespace Nevis14 {
             {
                 Global.ShowError("Couldn't open data file: " + adcDataFile);
                 return null;
-            }
+            }*/
 
             //----Fill the histogram----//
             // We want to skip the first 20 entries incase something weird happens.
@@ -400,32 +304,41 @@ namespace Nevis14 {
             // so we have an offset from the loop counter.
             string[] line;
             string[] separators = { " " };
-            for (int sampNum = 1; sampNum <= sampLength + 20; sampNum++)
+            for (int sampNum = 21; sampNum <= sampLength + 20; sampNum++)
             {
-                line = file.ReadLine().Split(separators, StringSplitOptions.RemoveEmptyEntries);
-                if (sampNum > 20)
-                {
-                    for (int isig = 0; isig < 4; isig++)
+                //line = file.ReadLine().Split(separators, StringSplitOptions.RemoveEmptyEntries);
+                //if (sampNum > 20)
+                //{
+                    for (int isig = 0; isig < numchannels; isig++)
                     {
-                        signalHisto[isig][sampNum - 20 - 1] = Convert.ToDouble(line[isig]);
+                        signalHisto[isig][sampNum - 20 - 1] = signals[isig][sampNum];
                         chart1.Series[isig].Points.AddXY(sampNum - 20 - 1, signalHisto[isig][sampNum-20-1]);
                     }
-                }
+                //}
             }
-            file.Close();
+            //file.Close();
             return signalHisto;
         }
         
         private double[] DoFFT(double[] signalHisto)
         {
-            double[] fourierHisto = new double[sampLength];
+            //Stopwatch timer = new Stopwatch();
+            //timer.Start();
+            //long inittime, ffttime, histocalctime;
+            double[] fourierHisto = new double[sampLength/2];
 
             fftw_complexarray fourierComplex = new fftw_complexarray(sampLength);
             GCHandle fin = GCHandle.Alloc(signalHisto, GCHandleType.Pinned);
             IntPtr fout = fourierComplex.Handle;
 
+            //inittime = timer.ElapsedTicks;
+            
+            
             IntPtr plan = fftw.dft_r2c(1, new int[] { sampLength }, fin.AddrOfPinnedObject(), fout, fftw_flags.Estimate);
             fftw.execute(plan);
+
+
+            //ffttime = timer.ElapsedTicks - inittime;
 
             //Managed FFT
             /*
@@ -438,21 +351,115 @@ namespace Nevis14 {
             double[] fourierOut = fourierComplex.GetData_double();
 
             double re, im;
-            for (int i = 0; i < sampLength; i++)
+            for (int i = 0; i < sampLength / 2; i++)
             {
-                if (i < sampLength / 2 + 1)
-                {
-                    re = fourierOut[2 * i];
-                    im = fourierOut[2 * i + 1];
-                }
-                else
-                {
-                    re = fourierOut[2 * (sampLength - i)];
-                    im = -(fourierOut[2 * (sampLength - i) + 1]);
-                }
+                re = fourierOut[2 * i];
+                im = fourierOut[2 * i + 1];
                 fourierHisto[i] = Math.Sqrt(re * re + im * im);
             }
+            //histocalctime = timer.ElapsedTicks - inittime - ffttime;
+            //timer.Stop();
+            //Console.WriteLine(String.Format("{0} - {1} - {2}", 100 * inittime / timer.ElapsedTicks, 100 * ffttime / timer.ElapsedTicks, 100* histocalctime / timer.ElapsedTicks));
             return fourierHisto;
+        }
+        public AdcData DoQACalculations(double[] fourierHisto, int channel)
+        {
+            int numPoints = 0;      //Keeping track of pts in FFT
+            int ithData = 0;        //For help looping through FFT
+            int numHarm = -1;       //Counting how many harmonics found
+
+            Dictionary<double, double> theData = new Dictionary<double, double>();  //Keeping track of level of each frequency
+
+            double binCont;         // Help with filling FFT
+            double sum2 = 0.0;           // For Calculating SINAD
+            double bin1, binMax = 0.0;    // For Manipulating output of FFT
+            double[] aHarmFreq = new double[150];   //Aliased Harmonics
+            double fourierFreq, tempFreq = 0;  //Help with looping through dictionary
+            double noDistSum2 = 0;
+
+            AdcData qadata = new AdcData();
+            qadata.outFreq = new string[5] { "", "", "", "", "" };
+
+
+            //----Find the Second Largest Value----// 
+            bin1 = fourierHisto[0];         // bin1 has the largest value, however
+            fourierHisto[0] = 0;            // that isn't actually part of our data.
+            binMax = fourierHisto.Max();        // The max value, our signal, is actually
+            fourierHisto[0] = bin1;             // the second largest value, now in binMax.
+
+
+            chart1.Series[channel].Points.AddXY(0, 20 * Math.Log10(Math.Abs(fourierHisto[1]) / Math.Abs(binMax))); // Only added to make plot look nicer
+            //----Normalize all the points to the maximum----//
+            for (int i = 1; i < (sampLength / 2); i++)
+            {
+                binCont = Math.Abs(fourierHisto[i]) / Math.Abs(binMax); // Normalizing to the maximum
+                theData[20 * Math.Log10(binCont)] = ((i) * sampFreq / sampLength);
+                chart1.Series[channel].Points.AddXY((i) * sampFreq / sampLength, 20 * Math.Log10(binCont));
+                if (binCont != 1.0)
+                {            // This is all points except the signal
+                    numPoints++;
+                    sum2 += binCont * binCont;
+                }
+            }
+
+
+            noDistSum2 += sum2;     // This is so we can make parallel calculations subtracting harmonics
+
+            //----Find Relevant Harmonics----//
+            // Harmonics occur at |+/- (k*sampFreq) +/- (n*signalFreq)|
+            // There will be overcounting if we let both k and n go +/-
+            // Keeping k positive, and for k=0 keeping n positive,thedata there is no overcounting
+
+            for (int k = 0; k <= 20; k++)
+            {
+                for (int ord = -55; ord <= 55; ord++)
+                {
+                    if (k > 0 || ord >= 0)
+                        tempFreq = Math.Abs(k * sampFreq + ord * freq);
+                    if (tempFreq != freq && tempFreq < sampFreq / 2 && tempFreq > 0)
+                    {     // Limits range of interesting harmonics
+                        numHarm++;
+                        aHarmFreq[numHarm] = tempFreq;
+                    }
+                }
+            }
+
+            //----Printing the Highest Readings and Corresponding Freq----//
+
+            var amps = theData.Keys.ToList();
+            amps.Sort();
+
+            foreach (double normAmp in amps)
+            {
+                fourierFreq = theData[normAmp];
+                if ((ithData > (numPoints - 6)) && (ithData < numPoints))
+                {
+                    qadata.outFreq[numPoints - 1 - ithData] = String.Format("  {0:F2},   {1:F2}", fourierFreq, normAmp);
+                }
+                if (ithData == numPoints - 1)
+                {
+                    qadata.sfdr = normAmp;
+                    // The SFDR is distance from signal (normalized to zero) to second largest
+                    // value. This will be the normalized amplitude of the second last point
+                    // since the last point is the signal (at 0 dB).
+                }
+                // This will remove the relevant harmonics so we can calculate SNR
+                for (int i = 0; i <= numHarm; i++)
+                {
+                    if (Math.Abs(fourierFreq - aHarmFreq[i]) < 0.00001)
+                    {
+                        noDistSum2 -= Math.Pow(10, normAmp / 10);
+                    }
+                }
+                ithData++;
+            }
+
+            //----Calculating Characteristic Variables----// 
+            qadata.sinadNoHarm = 10 * Math.Log10(noDistSum2);
+            qadata.sinad = 10 * Math.Log10(sum2);
+            qadata.enob = (-qadata.sinad - 1.76) / 6.02;
+
+            return qadata;
         }
     }
 }

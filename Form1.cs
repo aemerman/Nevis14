@@ -50,6 +50,7 @@ namespace Nevis14 {
         };
 
         const int samplesForCalib = 3000;
+        const int samplesForQA = 12400;
         int samplesUsedForCalib = samplesForCalib - 20;
         const int signalFreq = 5006510; // Hz
         const double signalAmp = 10.0; // V
@@ -77,6 +78,7 @@ namespace Nevis14 {
         // Lists to store the data read from the chip
         List<byte> bufferA = new List<byte>();
         List<byte> bufferB = new List<byte>();
+        double[][] signals = new double[4][];
 
         // Lists to store calibration constant data
         List<double> sarForMdac = new List<double>();
@@ -579,24 +581,36 @@ namespace Nevis14 {
         /// to the file adcData.txt, and prints it to the GUI
         /// </summary>
         /// <returns></returns>
-        public bool TakeData () {
-            GetAdcData(12400);
-            if (bufferA.Count != 12400 * 8) { Console.WriteLine(bufferA.Count); return false; }
-
+        public bool TakeData (bool writeToFile = true) {
+            GetAdcData(samplesForQA);
+            if (bufferA.Count != samplesForQA * 8) { Console.WriteLine(bufferA.Count); return false; }
+            int counts;
             WriteDataToGui(bufferA);
-
-            using (StreamWriter adcwrite = new StreamWriter(filePath + "adcData.txt"))
+            if (writeToFile)
             {
-                StringBuilder s = new StringBuilder("", bufferA.Count * 3);
-                for (int i = 0; i < bufferA.Count; i += 8)
+                using (StreamWriter adcwrite = new StreamWriter(filePath + "adcData.txt"))
+                {
+                    StringBuilder s = new StringBuilder("", bufferA.Count * 3);
+                    for (int i = 0; i < bufferA.Count; i += 8)
+                    {
+                        for (int j = 0; j < 8; j += 2)
+                        {
+                            counts = (bufferA[i + j] << 8) + bufferA[i + j + 1];
+                            s.Append(counts + " ");
+                            signals[j / 2][i / 8] = counts;
+                        }
+                        s.Append(Environment.NewLine);
+                    }
+                    adcwrite.Write(s);
+                }
+            }
+            else
+            {
+                for (int i = 0; i < bufferA.Count; i +=8)
                 {
                     for (int j = 0; j < 8; j += 2)
-                    {
-                        s.Append(((bufferA[i + j] << 8) + bufferA[i + j + 1]) + " ");
-                    }
-                    s.Append(Environment.NewLine);
+                        signals[j / 2][i / 8] = (bufferA[i + j] << 8) + bufferA[i + j + 1];
                 }
-                adcwrite.Write(s);
             }
             //System.IO.File.AppendAllText(filePath + "adcData.txt", s);
             return true;
@@ -804,7 +818,7 @@ namespace Nevis14 {
 
             Console.WriteLine("Data Taken");
             ffttime.Start();
-            AdcData[] adcData = FFT3(10);
+            AdcData[] adcData = FFT3(10, 4);
             ffttime.Stop();
 
             if (adcData == null) throw new Exception("No data returned from FFT3.");
@@ -895,6 +909,7 @@ namespace Nevis14 {
             filePath = Application.StartupPath + "/../../OUTPUT/";
             for (int i = 0; i < 4; i++)
             {
+                signals[i] = new double[samplesForQA];
                 chipControl1.Update(() => chipControl1.adcs[i].ResetButtonColor());
             }
             resultBox.Update(() => { resultBox.Clear(); resultBox.ResetBackColor(); });
@@ -945,7 +960,8 @@ namespace Nevis14 {
                 return;
             }
 
-            AdcData[] data;
+            double[] fourierHisto;
+            AdcData data;
             Chart voltagechart = new Chart();
             Series enobdata;
 
@@ -973,14 +989,25 @@ namespace Nevis14 {
             }; 
             voltagechart.Series.Add(enobdata);
             // End chart formatting
-
+            Stopwatch timer = new Stopwatch();
+            long inittime, readdatatime, ffttime;
+            double[] signalhisto;
             for (double amp = ampStart; amp <= ampStop; amp += ampStep)
             {
+                timer.Reset();
+                timer.Start();
                 functiongenerator.ApplySin(signalFreq, amp, 0);
-                TakeData();
+                TakeData(false);
                 functiongenerator.OutputOff();
-                data = FFT3(10);
-                enobdata.Points.AddXY(amp, data[0].enob);
+                inittime = timer.ElapsedTicks;
+                signalhisto = ReadData()[0];
+                readdatatime = timer.ElapsedTicks - inittime;
+                fourierHisto = DoFFT(signalhisto);
+                ffttime = timer.ElapsedTicks - readdatatime - inittime;
+                data = DoQACalculations(fourierHisto, 0);
+                enobdata.Points.AddXY(amp, data.enob);
+                timer.Stop();
+                Console.WriteLine("DoFFT = " + (100 * ffttime / timer.ElapsedTicks) + "% -- ReadData = " + (100 * readdatatime / timer.ElapsedTicks) + "%");
             }
             voltagechart.Invalidate();
             voltagechart.SaveImage(filePath + "ENOB_vs_amplitude.png", ChartImageFormat.Png);
@@ -988,7 +1015,7 @@ namespace Nevis14 {
 
         private void voltagetestbutton_Click(object sender, EventArgs e)
         {
-            VoltageRangeTest(3.0, 4.5, 0.01);
+            VoltageRangeTest(3.0, 4.5, 0.001);
             fftBox.Update(() => fftBox.Image = Image.FromFile(filePath + "ENOB_vs_amplitude.png"));
         }
     } // End Form1
