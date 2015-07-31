@@ -20,8 +20,8 @@ namespace Nevis14 {
         // The .exe file is located in ./bin/Debug so the path
         // must move back to the base of the directory structure
         string filePath = Application.StartupPath + "/../../OUTPUT/";
+        //string filePath = "C:\\users/atlas/Dropbox/dataAug2/";
 
-        //TODO: add calibration constant requirements 
         const double calBound = 0.10;  // maximum % for the calibration parameters
         const double enobBound = 9.5; // minimum ENOB required for the chip to be good
         const string chipYear = "14";

@@ -29,7 +29,7 @@ namespace Nevis14 {
                  ((adcFilter & 1) << 6) |
                  ((pllReset & 1) << 7)),
                 (byte) (fifoACounter & 255),
-                (byte) ((fifoACounter >> 8) & 255),
+                (byte) ((fifoACounter >> 8) & 63),
                 (byte)
                 (((startControlOperation & 1) << 0) |
                 ((pulseCommand & 1) << 1) |
