@@ -24,8 +24,8 @@ namespace Nevis14 {
         public uint slvsControl { get; set; }
 
         public void Activate (uint channelNum) {
-            if (adcs[0].isActive || adcs[1].isActive || adcs[2].isActive || adcs[3].isActive) {
-                throw new Exception("trying to activate an ADC control while another is still active");
+            for (int iCh = 0; iCh < 4; iCh++) {
+                adcs[iCh].Deactivate ();
             }
             adcs[channelNum].Activate(ref mdacControls, ref dacButtons);
         }
@@ -137,24 +137,26 @@ namespace Nevis14 {
             public uint cal1 {
                 get {
                     if (isActive) return this._mdac.cal1;
-                    else return 0;
+                    else return this._cal1;
                 }
-                set { if (isActive) this._mdac.cal1 = value; }
+                set { if (isActive) this._mdac.cal1 = value; this._cal1 = value; }
             }
             public uint cal2 {
                 get {
                     if (isActive) return this._mdac.cal2;
-                    else return 0;
+                    else return this._cal2;
                 }
-                set { if (isActive) this._mdac.cal2 = value; }
+                set { if (isActive) this._mdac.cal2 = value; this._cal2 = value; }
             }
             public uint disable {
                 get {
                     if (isActive) return this._mdac.disable;
-                    else return 0;
+                    else return this._disable;
                 }
-                set { if (isActive) this._mdac.disable = value; }
+                set { if (isActive) this._mdac.disable = value; this._disable = value; }
             }
+
+            private uint _cal1, _cal2, _disable;
         } // End class myMdac
 
         public void ResetButtonColor()
@@ -310,6 +312,9 @@ namespace Nevis14 {
             cal2 = 0;
         }
 
+        private void cal1_Click (object s, EventArgs e) { this.cal1 = (uint)((this.cal1 == 0) ? 1 : 0); }
+        private void cal1_Click (object s, EventArgs e) { this.cal1 = (uint)((this.cal1 == 0) ? 1 : 0); }
+        private void label_Click (object s, EventArgs e) { this.disable = (uint)((this.disable == 0) ? 1 : 0); }
         private uint _id;
         public bool CompareId (uint otherId) { return (_id == otherId); }
         public uint cal1 {
