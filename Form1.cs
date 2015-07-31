@@ -933,7 +933,7 @@ namespace Nevis14 {
             return scpitalker != null;
         } // End SCPIconnect
 
-        public void VoltageRangeTest(double ampStart, double ampStep)
+        public void VoltageRangeTest(double ampStart, double ampStop, double ampStep)
         {
             try
             {
@@ -947,52 +947,48 @@ namespace Nevis14 {
 
             AdcData[] data;
             Chart voltagechart = new Chart();
-            Series[] enobdata = new Series[4];
+            Series enobdata;
 
             ResetGui();
+            filePath += "Nevis14_" + chipNumBox.Text.PadLeft(5, '0') + "/";
             filePath += CreateNewDirectory("Volt");
 
             // --Chart Formatting--
             voltagechart.Size = new Size(690, 595);
-            for (int channel = 0; channel < 4; channel++)
-            {
-                voltagechart.ChartAreas.Add(new ChartArea());
-                voltagechart.ChartAreas[channel].AxisX.Minimum = 0;
-                voltagechart.ChartAreas[channel].AxisX.Maximum = signalAmp * 1.1;
-                voltagechart.ChartAreas[channel].AxisX.Title = "Signal Amplitude [V]";
-                voltagechart.ChartAreas[channel].AxisY.Minimum = 0;
-                voltagechart.ChartAreas[channel].AxisY.Maximum = 12;
-                voltagechart.ChartAreas[channel].AxisY.Title = "ENOB";
+            voltagechart.ChartAreas.Add(new ChartArea());
+            voltagechart.ChartAreas[0].AxisX.Title = "Signal Amplitude [V]";
+            voltagechart.ChartAreas[0].AxisY.Minimum = 9.5;
+            voltagechart.ChartAreas[0].AxisY.Maximum = 10.5;
+            voltagechart.ChartAreas[0].AxisY.Title = "ENOB";
 
-                enobdata[channel] = new Series{
-                    Color = Color.Red,
-                    IsVisibleInLegend = false,
-                    IsXValueIndexed = true,
-                    MarkerStyle = MarkerStyle.Square,
-                    MarkerColor = Color.Red,
-                    MarkerBorderWidth = 0,
-                    ChartArea = chart1.ChartAreas[channel].Name,
-                    ChartType = SeriesChartType.Point
-                };
-            }// End chart formatting
+            enobdata = new Series{
+                Color = Color.Red,
+                IsVisibleInLegend = false,
+                IsXValueIndexed = true,
+                MarkerStyle = MarkerStyle.Square,
+                MarkerColor = Color.Red,
+                MarkerBorderWidth = 0,
+                ChartArea = chart1.ChartAreas[0].Name,
+                ChartType = SeriesChartType.Point
+            }; 
+            voltagechart.Series.Add(enobdata);
+            // End chart formatting
 
-            for (double amp = ampStart; amp < signalAmp; amp += ampStep)
+            for (double amp = ampStart; amp <= ampStop; amp += ampStep)
             {
                 functiongenerator.ApplySin(signalFreq, amp, 0);
                 TakeData();
                 functiongenerator.OutputOff();
                 data = FFT3(10);
-                for (int channel = 0; channel < 4; channel++)
-                {
-                    enobdata[channel].Points.AddXY(amp, data[channel].enob);
-                }
+                enobdata.Points.AddXY(amp, data[0].enob);
             }
+            voltagechart.Invalidate();
             voltagechart.SaveImage(filePath + "ENOB_vs_amplitude.png", ChartImageFormat.Png);
         }
 
         private void voltagetestbutton_Click(object sender, EventArgs e)
         {
-            VoltageRangeTest(1.0, 0.01);
+            VoltageRangeTest(3.0, 4.5, 0.01);
             fftBox.Update(() => fftBox.Image = Image.FromFile(filePath + "ENOB_vs_amplitude.png"));
         }
     } // End Form1
