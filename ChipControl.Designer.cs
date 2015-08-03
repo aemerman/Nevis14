@@ -18,6 +18,7 @@
                 new MdacControl(3),
                 new MdacControl(4)
             };
+            this.oFlagButton = new System.Windows.Forms.Button();
             this.dacButtons = new System.Windows.Forms.Button[2] {
                 new System.Windows.Forms.Button(),
                 new System.Windows.Forms.Button()
@@ -58,11 +59,20 @@
             this.mdacControls[3].Size = new System.Drawing.Size(80, 90);
             this.mdacControls[3].TabIndex = 7;
             // 
+            // oFlagButton
+            // 
+            this.oFlagButton.Location = new System.Drawing.Point(10, 15);
+            this.oFlagButton.Name = "oFlagButton";
+            this.oFlagButton.Size = new System.Drawing.Size(65, 30);
+            this.oFlagButton.TabIndex = 8;
+            this.oFlagButton.Text = "OFlag";
+            this.oFlagButton.UseVisualStyleBackColor = true;
+            // 
             // dac1Button
             // 
-            this.dacButtons[0].Location = new System.Drawing.Point(10, 25);
+            this.dacButtons[0].Location = new System.Drawing.Point(10, 55);
             this.dacButtons[0].Name = "dac1Button";
-            this.dacButtons[0].Size = new System.Drawing.Size(65, 35);
+            this.dacButtons[0].Size = new System.Drawing.Size(65, 30);
             this.dacButtons[0].TabIndex = 8;
             this.dacButtons[0].Text = "DAC1";
             this.dacButtons[0].UseVisualStyleBackColor = true;
@@ -71,7 +81,7 @@
             // 
             this.dacButtons[1].Location = new System.Drawing.Point(10, 90);
             this.dacButtons[1].Name = "dac2Button";
-            this.dacButtons[1].Size = new System.Drawing.Size(65, 35);
+            this.dacButtons[1].Size = new System.Drawing.Size(65, 30);
             this.dacButtons[1].TabIndex = 9;
             this.dacButtons[1].Text = "DAC2";
             this.dacButtons[1].UseVisualStyleBackColor = true;
@@ -113,12 +123,14 @@
             this.Controls.Add(this.adcs[1]);
             this.Controls.Add(this.adcs[2]);
             this.Controls.Add(this.adcs[3]);
+            this.Controls.Add(this.oFlagButton);
             this.Controls.Add(this.dacButtons[0]);
             this.Controls.Add(this.dacButtons[1]);
             this.Controls.Add(this.mdacControls[0]);
             this.Controls.Add(this.mdacControls[1]);
             this.Controls.Add(this.mdacControls[2]);
             this.Controls.Add(this.mdacControls[3]);
+            this.ValueChanged += new System.EventHandler(OnValueChanged);
             this.Name = "ChipControl";
             this.Size = new System.Drawing.Size(400, 135);
             this.ResumeLayout(false);
@@ -127,6 +139,7 @@
 
         #endregion
 
+        private System.Windows.Forms.Button oFlagButton;
         private System.Windows.Forms.Button[] dacButtons;
         private MdacControl[] mdacControls;
         public AdcControl[] adcs;
@@ -191,6 +204,7 @@
             this.label1.TabIndex = 0;
             this.label1.Text = "MDAC"+_id;
             this.label1.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.label1.Click += new System.EventHandler (label_Click);
             // 
             // cal2Button
             // 
@@ -200,6 +214,7 @@
             this.cal2Button.TabIndex = 2;
             this.cal2Button.Text = "Cal2";
             this.cal2Button.UseVisualStyleBackColor = true;
+            this.cal2Button.Click += new System.EventHandler (cal2_Click);
             // 
             // cal1Button
             // 
@@ -209,6 +224,7 @@
             this.cal1Button.TabIndex = 1;
             this.cal1Button.Text = "Cal1";
             this.cal1Button.UseVisualStyleBackColor = true;
+            this.cal1Button.Click += new System.EventHandler (cal1_Click);
             // 
             // MdacControl
             // 

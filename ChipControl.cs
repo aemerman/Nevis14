@@ -29,6 +29,12 @@ namespace Nevis14 {
             }
             adcs[channelNum].Activate(ref mdacControls, ref dacButtons);
         }
+        public event EventHandler ValueChanged;
+        private void OnValueChanged (object s, EventArgs e) {
+            for (int iCh = 0; iCh < 4; iCh++) {
+                if (adcs[iCh].isActive) adcs[iCh].MatchAdcToGui();
+            }
+        }
     }
 
     [Serializable]
@@ -131,6 +137,21 @@ namespace Nevis14 {
                 this._mdac = null;
             } // End Deactivate
 
+            private void onClick (object sender, uint value) {
+                if (this.isActive) {
+
+                } 
+            }
+            public void MatchMdacToGui () {
+                cal1 = cal1;
+                cal2 = cal2;
+                disable = disable;
+            } // End MatchMdacToGui
+            public void MatchGuiToMdac () {
+                cal1 = _cal1;
+                cal2 = _cal2;
+                disable = _disable;
+            } // End MatchGuiToMdac
             public uint correction0;
             public uint correction1;
             public uint bias = 0;
@@ -165,6 +186,24 @@ namespace Nevis14 {
         }
 
         public uint GetChannel () { return _id - 1; } // End GetChannel
+        public void MatchAdcToGui () {
+            // Match stored state info to gui values
+            dac1 = dac1;
+            dac2 = dac2;
+            oFlag = oFlag;
+            for (int i = 0; i < 4; i++) {
+                mdacs[i].MatchMdacToGui();
+            }
+        } // End MatchAdcToGui
+        public void MatchGuiToAdc () {
+            // Match gui values to stored state info
+            dac1 = _dac1;
+            dac2 = _dac2;
+            oFlag = oFlag;
+            for (int i = 0; i < 4; i++) {
+                mdacs[i].MatchGuiToMdac();
+            }
+        } // End MatchAdcToGui
         public void SetCalInfo (int calNum, int mdacNum) {
             if (this.isActive == false) throw new Exception("Trying to modify an inactive ADC");
             this.Update(() => {
@@ -313,7 +352,7 @@ namespace Nevis14 {
         }
 
         private void cal1_Click (object s, EventArgs e) { this.cal1 = (uint)((this.cal1 == 0) ? 1 : 0); }
-        private void cal1_Click (object s, EventArgs e) { this.cal1 = (uint)((this.cal1 == 0) ? 1 : 0); }
+        private void cal2_Click (object s, EventArgs e) { this.cal2 = (uint)((this.cal2 == 0) ? 1 : 0); }
         private void label_Click (object s, EventArgs e) { this.disable = (uint)((this.disable == 0) ? 1 : 0); }
         private uint _id;
         public bool CompareId (uint otherId) { return (_id == otherId); }

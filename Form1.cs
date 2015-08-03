@@ -582,22 +582,23 @@ namespace Nevis14 {
             List<string> lines = bufferA.ToDecimal();
             WriteDataToGui(lines);
 
-            StreamWriter adcwrite = new StreamWriter(filePath + "adcData.txt");
-            /*StringBuilder s = new StringBuilder("", bufferA.Count * 3);
-            for (int i = 0; i < bufferA.Count; i += 8) {
-                for (int j = 0; j < 8; j += 2) {
-                    s.Append(((bufferA[i + j] << 8) + bufferA[i + j + 1]) + " ");
-                }
-                s.Append(Environment.NewLine);
-            }*/
-            StringBuilder s = new StringBuilder(lines.Count * 22);
-            for (int i = 0; i < lines.Count; i += 8) {
-                s.Append(lines[i]);
-                s.Append(Environment.NewLine);
-            }
-            adcwrite.Write(s);
-            adcwrite.Close();
 
+            using (StreamWriter adcwrite = new StreamWriter (filePath + "adcData.txt", true)) {
+                /*StringBuilder s = new StringBuilder("", bufferA.Count * 3);
+                for (int i = 0; i < bufferA.Count; i += 8) {
+                    for (int j = 0; j < 8; j += 2) {
+                        s.Append(((bufferA[i + j] << 8) + bufferA[i + j + 1]) + " ");
+                    }
+                    s.Append(Environment.NewLine);
+                }*/
+                StringBuilder s = new StringBuilder (lines.Count * 22);
+                for (int i = 0; i < lines.Count; i += 8) {
+                    s.Append (lines[i]);
+                    s.Append (Environment.NewLine);
+                }
+                adcwrite.Write (s);
+                adcwrite.Close ();
+            }
             //System.IO.File.AppendAllText(filePath + "adcData.txt", s);
             return true;
         } // End TakeData
@@ -771,10 +772,20 @@ namespace Nevis14 {
 
         private void dataButton_Click (object sender, EventArgs e) {
             RunOnBkgWorker((obj, args) => {
-                AdcData[] adcData;
+                //AdcData[] adcData;
                 TakeData(); 
+                //adcData = FFT3(40, chipdata);
+                //WriteResult(adcData);
+                args.Result = true;
+            });
+        }
+
+        private void fftButton_Click (object sender, EventArgs e) {
+            RunOnBkgWorker ((obj, args) => {
+                AdcData[] adcData;
                 adcData = FFT3(40, chipdata);
                 WriteResult(adcData);
+                args.Result = true;
             });
         }
 
