@@ -8,7 +8,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Windows.Forms.DataVisualization.Charting;
 using System.IO;
+using NationalInstruments.VisaNS;
 
 namespace Nevis14 {
     // This file contains the main functions used by the code
@@ -18,8 +20,8 @@ namespace Nevis14 {
         // The .exe file is located in ./bin/Debug so the path
         // must move back to the base of the directory structure
         string filePath = Application.StartupPath + "/../../OUTPUT/";
+        //string filePath = "C:\\users/atlas/Dropbox/dataAug2/";
 
-        //TODO: add calibration constant requirements 
         const double calBound = 0.10;  // maximum % for the calibration parameters
         const double enobBound = 9.5; // minimum ENOB required for the chip to be good
         const string chipYear = "14";
@@ -48,7 +50,11 @@ namespace Nevis14 {
         };
 
         const int samplesForCalib = 3000;
+        const int samplesForQA = 12400;
         int samplesUsedForCalib = samplesForCalib - 20;
+        const int signalFreq = 5006510; // Hz
+        const double signalAmp = 10.0; // V
+        const string signalIP = "10.44.45.17";//"169.254.2.20";
 
         // Variables used to keep track of the data being output
         // ------------
@@ -72,6 +78,7 @@ namespace Nevis14 {
         // Lists to store the data read from the chip
         List<byte> bufferA = new List<byte>();
         List<byte> bufferB = new List<byte>();
+        double[][] signals = new double[4][];
 
         // Lists to store calibration constant data
         List<double> sarForMdac = new List<double>();
@@ -79,6 +86,7 @@ namespace Nevis14 {
 
         Ftdi ftdi;
 
+        // Stopwatches for Timing Controls
         Stopwatch fullcalibtime = new Stopwatch();
         Stopwatch docaltime = new Stopwatch();
         Stopwatch sendcalibconttime = new Stopwatch();
@@ -89,11 +97,16 @@ namespace Nevis14 {
         Stopwatch takedatatime = new Stopwatch();
         Stopwatch inittime = new Stopwatch();
 
+        // Used to talk to the Signal Generator
+        MessageBasedSession scpitalker;
+        SCPI functiongenerator;
+
 
 
         // begin functions
-        public Form1 () { 
+        public Form1 () {
             InitializeComponent();
+            SCPIconnect();
         } // End constructor 
 
         private void InitializeConnection () {
@@ -116,9 +129,11 @@ namespace Nevis14 {
             GetAdcData(1);
             if (bufferA.Count != 8) throw new Exception("Not enough data for serializer test.");
             for (int i = 0; i < bufferA.Count; i += 2) {
+                Console.Write(bufferA[i] + " " + bufferA[i + 1] + " ");
                 if (bufferA[i] != ((1 << 7) + (7 << 1))) return false; // byte should be 8'b10001110
                 if (bufferA[i + 1] != (15 << 4)) return false; // byte should be 8'b11110000
             }
+            Console.Write(Environment.NewLine);
             for (uint iCh = 0; iCh < 4; iCh++) {
                 chipControl1.adcs[iCh].serializer = 0;
                 SendCalibControl(iCh);
@@ -564,27 +579,41 @@ namespace Nevis14 {
         }   // End CheckCalibration
 
         /// <summary>
-        /// Simple method to take 6200 data points. Appends the data
+        /// Simple method to take 12400 data points. Appends the data
         /// to the file adcData.txt, and prints it to the GUI
         /// </summary>
         /// <returns></returns>
-        public bool TakeData () {
-            GetAdcData(12400);
-            if (bufferA.Count != 12400 * 8) { Console.WriteLine(bufferA.Count); return false; }
-
+        public bool TakeData (bool writeToFile = true) {
+            GetAdcData(samplesForQA);
+            if (bufferA.Count != samplesForQA * 8) { Console.WriteLine(bufferA.Count); return false; }
+            int counts;
             WriteDataToGui(bufferA);
-
-            StreamWriter adcwrite = new StreamWriter(filePath + "adcData.txt");
-            StringBuilder s = new StringBuilder("", bufferA.Count * 3);
-            for (int i = 0; i < bufferA.Count; i += 8) {
-                for (int j = 0; j < 8; j += 2) {
-                    s.Append(((bufferA[i + j] << 8) + bufferA[i + j + 1]) + " ");
+            if (writeToFile)
+            {
+                using (StreamWriter adcwrite = new StreamWriter(filePath + "adcData.txt"))
+                {
+                    StringBuilder s = new StringBuilder("", bufferA.Count * 3);
+                    for (int i = 0; i < bufferA.Count; i += 8)
+                    {
+                        for (int j = 0; j < 8; j += 2)
+                        {
+                            counts = (bufferA[i + j] << 8) + bufferA[i + j + 1];
+                            s.Append(counts + " ");
+                            signals[j / 2][i / 8] = counts;
+                        }
+                        s.Append(Environment.NewLine);
+                    }
+                    adcwrite.Write(s);
                 }
-                s.Append(Environment.NewLine);
             }
-            adcwrite.Write(s);
-            adcwrite.Close();
-
+            else
+            {
+                for (int i = 0; i < bufferA.Count; i +=8)
+                {
+                    for (int j = 0; j < 8; j += 2)
+                        signals[j / 2][i / 8] = (bufferA[i + j] << 8) + bufferA[i + j + 1];
+                }
+            }
             //System.IO.File.AppendAllText(filePath + "adcData.txt", s);
             return true;
         } // End TakeData
@@ -700,10 +729,14 @@ namespace Nevis14 {
         private void runButton_Click (object sender, EventArgs e) {
             // The background worker will only be started if there is a valid chip number (any int)
             runButton.Update(() => runButton.Enabled = false);
+            if (!SCPIconnect())
+                return;
             if (this.chipNumBox.Text == "" || this.chipNumBox.BackColor == System.Drawing.Color.Red) {
                 MessageBox.Show("Invalid chip id. Please enter the number of the chip you are testing before running the code.");
             } else {
                 ResetGui();
+                if (ftdi != null)
+                    ftdi.Close();
                 filePath += "Nevis14_" + chipNumBox.Text.PadLeft(5, '0') + "/";
                 bkgWorker.RunWorkerAsync();
             }
@@ -723,6 +756,13 @@ namespace Nevis14 {
         private void bkgWorker_DoWork (object sender, DoWorkEventArgs e) {
             BackgroundWorker thisWorker = sender as BackgroundWorker;
             totaltime.Start();
+            try
+            {
+                functiongenerator.OutputOff();
+                while (functiongenerator.Output()) { }      // Waits until signal output is off
+            }
+            catch
+            {}
             // Normally the RunWorkerCompleted method would handle exceptions, but
             // that doesn't work in the debugger. Will the undergrads be using a
             // release version?
@@ -750,23 +790,48 @@ namespace Nevis14 {
                 if(Global.AskError("Failed serializer test. Retry?") != DialogResult.Retry) break;
             }
             //SeeTest(5);
+
+
             fullcalibtime.Start();
             if (!DoCalibration(thisWorker, e)) { e.Result = false; return; }
             fullcalibtime.Stop();
 
-            totaltime.Stop();
-            if(MessageBox.Show("Finished calibrating. Please turn on the waveform generator.",
-                "", MessageBoxButtons.OKCancel) == DialogResult.Cancel) { e.Cancel = true; return; }
-            totaltime.Start();
+            try
+            {
+                functiongenerator.ApplySin(signalFreq, signalAmp, 0);
+                while (!functiongenerator.Output()) { } // Waits until signal output is on
+            }
+            catch
+            {
+                totaltime.Stop();
+                if (MessageBox.Show("Finished calibrating. Please turn on the waveform generator manually.",
+                    "", MessageBoxButtons.OKCancel) == DialogResult.Cancel) { e.Cancel = true; return; }
+                totaltime.Start();
+            }
+
             takedatatime.Start();
             if (!TakeData()) { e.Result = false; Console.WriteLine("Error Taking Data"); return; }
             takedatatime.Stop();
+            try
+            {
+                functiongenerator.OutputOff();
+            }
+            catch { }
 
             Console.WriteLine("Data Taken");
             ffttime.Start();
-            AdcData[] adcData = FFT3(10, chipdata);
+            AdcData[] adcData = FFT3(10, 4);
             ffttime.Stop();
+
             if (adcData == null) throw new Exception("No data returned from FFT3.");
+            else
+            {
+                for (int isig = 0; isig < 4; isig++)
+                {
+                    chipdata[isig + 1] += adcData[isig].Print();
+                }
+            }
+
             WriteDataToFile();
             WriteResult(adcData);
             totaltime.Stop();
@@ -846,14 +911,13 @@ namespace Nevis14 {
             filePath = Application.StartupPath + "/../../OUTPUT/";
             for (int i = 0; i < 4; i++)
             {
+                signals[i] = new double[samplesForQA];
                 chipControl1.Update(() => chipControl1.adcs[i].ResetButtonColor());
             }
             resultBox.Update(() => { resultBox.Clear(); resultBox.ResetBackColor(); });
             commandBox.Update(() => commandBox.Clear());
             dataBox.Update(() => dataBox.Clear());
             fftBox.Update(() => fftBox.Image = null);
-            if(ftdi != null)
-                ftdi.Close();
 
             // Reset Timers
             totaltime.Reset();
@@ -867,5 +931,94 @@ namespace Nevis14 {
             inittime.Reset();
             
         } // End resetGui
+
+        public bool SCPIconnect()
+        {
+            if (scpitalker == null)
+            {
+                try
+                {
+                    scpitalker = new MessageBasedSession("TCPIP::" + signalIP);
+                    functiongenerator = new SCPI(scpitalker);
+                }
+                catch (System.ArgumentException)
+                {
+                    if (Global.AskError("Check your signal generator connection settings") == DialogResult.Retry)
+                        SCPIconnect();
+                }
+            }
+            return scpitalker != null;
+        } // End SCPIconnect
+
+        public void VoltageRangeTest(double ampStart, double ampStop, double ampStep)
+        {
+            try
+            {
+                functiongenerator.OutputOff();
+            }           
+            catch (System.ArgumentException)
+            {
+                MessageBox.Show("This test is not available without a connection to the signal generator.");
+                return;
+            }
+
+            double[] fourierHisto;
+            AdcData data;
+            Chart voltagechart = new Chart();
+            Series enobdata;
+
+            ResetGui();
+            filePath += "Nevis14_" + chipNumBox.Text.PadLeft(5, '0') + "/";
+            filePath += CreateNewDirectory("Volt");
+
+            // --Chart Formatting--
+            voltagechart.Size = new Size(690, 595);
+            voltagechart.ChartAreas.Add(new ChartArea());
+            voltagechart.ChartAreas[0].AxisX.Title = "Signal Amplitude [V]";
+            voltagechart.ChartAreas[0].AxisY.Minimum = 9.5;
+            voltagechart.ChartAreas[0].AxisY.Maximum = 10.5;
+            voltagechart.ChartAreas[0].AxisY.Title = "ENOB";
+
+            enobdata = new Series{
+                Color = Color.Red,
+                IsVisibleInLegend = false,
+                IsXValueIndexed = true,
+                MarkerStyle = MarkerStyle.Square,
+                MarkerColor = Color.Red,
+                MarkerBorderWidth = 0,
+                ChartArea = chart1.ChartAreas[0].Name,
+                ChartType = SeriesChartType.Point
+            }; 
+            voltagechart.Series.Add(enobdata);
+            // End chart formatting
+            Stopwatch timer = new Stopwatch();
+            long inittime, readdatatime, ffttime;
+            double[] signalhisto;
+            for (double amp = ampStart; amp <= ampStop; amp += ampStep)
+            {
+                timer.Reset();
+                timer.Start();
+                functiongenerator.ApplySin(signalFreq, amp, 0);
+                TakeData(false);
+                functiongenerator.OutputOff();
+                inittime = timer.ElapsedTicks;
+                signalhisto = ReadData()[0];
+                readdatatime = timer.ElapsedTicks - inittime;
+                fourierHisto = DoFFT(signalhisto);
+                ffttime = timer.ElapsedTicks - readdatatime - inittime;
+                data = DoQACalculations(fourierHisto, 0);
+                enobdata.Points.AddXY(amp, data.enob);
+                timer.Stop();
+                Console.WriteLine("DoFFT = " + (100 * ffttime / timer.ElapsedTicks) + "% -- ReadData = " + (100 * readdatatime / timer.ElapsedTicks) + "%");
+            }
+            voltagechart.Invalidate();
+            voltagechart.SaveImage(filePath + "ENOB_vs_amplitude.png", ChartImageFormat.Png);
+        }
+
+        private void voltagetestbutton_Click(object sender, EventArgs e)
+        {
+            VoltageRangeTest(3.0, 4.5, 0.005);
+            fftBox.Update(() => fftBox.Image = Image.FromFile(filePath + "ENOB_vs_amplitude.png"));
+        }
     } // End Form1
 }
