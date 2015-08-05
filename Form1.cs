@@ -690,11 +690,28 @@ namespace Nevis14 {
             return lines;
         } // End ParseSee
 
+        public void TriggerTest (object sender, DoWorkEventArgs e) {
+            SendPllResetCommand(); // resets trigger (and pll count)
+            for (int iPulse = 0; iPulse < 1000; iPulse++) { // arbitrary number, set later
+                SendTriggerPulseCommand();
+                // Take data for ~800ns to make sure we get the full calo pulse
+                GetAdcData(40);
+                List<string> lines = bufferA.ToDecimal();
+                WriteDataToGui(lines);
+                using (StreamWriter adcwrite = new StreamWriter(filePath + "triggerData.txt", true)) {
+                    StringBuilder s = new StringBuilder(lines.Count * 22);
+                    for (int iLine = 0; iLine < lines.Count; iLine++) {
+                        s.Append(lines[iLine]);
+                        s.Append(Environment.NewLine);
+                    }
+                    adcwrite.Write(s);
+                    adcwrite.Close();
+                } // end write to file
+            }
+        } // End TriggerTest
+
         // Parses data and it to the data box (right side of GUI)
         private void WriteDataToGui (List<string> data) {
-            // ADC data should be output in multiples of 8
-            // (b.c. there are 4 channels on the chip and there are 2 bytes per channel)
-
             dataBox.Update(() => dataBox.AppendLines(data));
         } // End WriteDataToGui
 
@@ -713,9 +730,6 @@ namespace Nevis14 {
             };
 
             commandBox.Update(() => commandBox.AppendText(Environment.NewLine + port + " " + s));
-
-            /*System.IO.File.AppendAllText(filePath + "commands.log",
-                Environment.NewLine + port + " " + s);*/
         } // End WriteCommandToGui
 
         public string CreateNewDirectory (string prefix, int width = 2) {
@@ -812,13 +826,14 @@ namespace Nevis14 {
         }
         
         private void triggerButton_Click (object sender, EventArgs e) {
-            RunOnBkgWorker((obj, args) => {
+            /*RunOnBkgWorker((obj, args) => {
                 SendPllResetCommand();
                 while (true) {
                     SendTriggerPulseCommand();
                 }
                 args.Result = true;
-            });
+            });*/
+            RunOnBkgWorker(TriggerTest);
         }
 
         private void cancelButton_Click (object sender, EventArgs e) {

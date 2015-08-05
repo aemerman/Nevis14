@@ -114,7 +114,7 @@ namespace Nevis14 {
             // 
             this.chipNumBox.Location = new System.Drawing.Point(105, 10);
             this.chipNumBox.Name = "chipNumBox";
-            this.chipNumBox.Size = new System.Drawing.Size(85, 30);
+            this.chipNumBox.Size = new System.Drawing.Size(85, 29);
             this.chipNumBox.TabIndex = 7;
             this.chipNumBox.ValidatingType = typeof(int);
             this.chipNumBox.TypeValidationCompleted += new System.Windows.Forms.TypeValidationEventHandler(this.chipNumBox_TypeValidationCompleted);
@@ -166,7 +166,7 @@ namespace Nevis14 {
             this.fftButton.TabIndex = 17;
             this.fftButton.Text = "FFT";
             this.fftButton.UseVisualStyleBackColor = true;
-            this.fftButton.Click += new System.EventHandler(fftButton_Click);
+            this.fftButton.Click += new System.EventHandler(this.fftButton_Click);
             // 
             // triggerButton
             // 
@@ -176,7 +176,7 @@ namespace Nevis14 {
             this.triggerButton.TabIndex = 16;
             this.triggerButton.Text = "Trigger";
             this.triggerButton.UseVisualStyleBackColor = true;
-            this.triggerButton.Click += new System.EventHandler(triggerButton_Click);
+            this.triggerButton.Click += new System.EventHandler(this.triggerButton_Click);
             // 
             // button3
             // 
