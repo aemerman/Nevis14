@@ -1015,7 +1015,7 @@ namespace Nevis14 {
 
         private void voltagetestbutton_Click(object sender, EventArgs e)
         {
-            VoltageRangeTest(3.0, 4.5, 0.001);
+            VoltageRangeTest(3.0, 4.5, 0.005);
             fftBox.Update(() => fftBox.Image = Image.FromFile(filePath + "ENOB_vs_amplitude.png"));
         }
     } // End Form1
