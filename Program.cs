@@ -94,7 +94,7 @@ namespace Nevis14 {
 
         public static void AppendLines (this TextBox box, List<string> lines) {
             foreach (string s in lines) {
-                box.AppendText(s);
+                box.AppendText(s + Environment.NewLine);
             }
         }
 

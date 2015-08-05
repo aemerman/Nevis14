@@ -27,14 +27,29 @@ namespace Nevis14 {
             for (int iCh = 0; iCh < 4; iCh++) {
                 adcs[iCh].Deactivate ();
             }
-            adcs[channelNum].Activate(ref mdacControls, ref dacButtons);
-        }
-        public event EventHandler ValueChanged;
-        private void OnValueChanged (object s, EventArgs e) {
+            adcs[channelNum].Activate(ref mdacControls, ref dacButtons, ref oFlagButton, ref serializerButton);
+        } // End Activate
+        private void button_Click (object s, EventArgs e) {
+            // If button is on, turn off. Else turn on.
+            (s as Button).BackColor = ((s as Button).BackColor == Global.OnColor) ? Global.OffColor : Global.OnColor;
+            OnValueChanged(s, e);
+        } // End button_Click
+        public void OnValueChanged (object s, EventArgs e) {
             for (int iCh = 0; iCh < 4; iCh++) {
                 if (adcs[iCh].isActive) adcs[iCh].MatchAdcToGui();
             }
-        }
+        } // End OnValueChanged
+        public void ResetGuiValues () {
+            serializerButton.BackColor = default(Color);
+            oFlagButton.BackColor = default(Color);
+            dacButtons[0].BackColor = default(Color);
+            dacButtons[1].BackColor = default(Color);
+            for (int i = 0; i < 4; i++) {
+                mdacControls[i].cal1 = 0;
+                mdacControls[i].cal2 = 0;
+                mdacControls[i].disable = 1;
+            }
+        } // End ResetGuiValues
     }
 
     [Serializable]
@@ -44,28 +59,38 @@ namespace Nevis14 {
             InitializeComponent();
             _dacs = null;
             mdacs = new Mdac[4] { new Mdac(1), new Mdac(2), new Mdac(3), new Mdac(4) };
+            oFlag = 0;
+            serializer = 0;
+            dac1 = 0;
+            dac2 = 0;
         }
 
-        public void Activate (ref MdacControl[] mdacControls, ref Button[] dacButtons) {
+        public void Activate (ref MdacControl[] mdacControls, ref Button[] dacButtons, ref Button oFlagButton, ref Button serializerButton) {
             if (mdacControls.Length != 4 || dacButtons.Length != 2) {
                 throw new Exception("wrong number of components. mdacs: "
                     + mdacControls.Length + " dacs: " + dacButtons.Length);
             }
 
-            // Set initial button colors
+            // Set initial button color
             this.Update(() => this.adcButton.BackColor = Color.DimGray);
+            _oFlagButton = oFlagButton;
+            _serializerButton = serializerButton;
             _dacs = dacButtons;
             for (int i = 0; i < 4; i++) {
                 mdacs[i].Activate(ref mdacControls[i]);
             }
             isActive = true;
-            dac1 = 0;
-            dac2 = 0;
+            MatchGuiToAdc();
         } // End Activate
+        private void adcButton_Click (object s, EventArgs e) {
+            if (this.isActive) {
+                this.Deactivate(); (this.Parent as ChipControl).ResetGuiValues();
+            } else (this.Parent as ChipControl).Activate(_id - 1);
+        } // End adcButton_Click
         public void Deactivate () {
-            oFlag = 1;
             isActive = false; _dacs = null;
             for (int i = 0; i < 4; i++) { mdacs[i].Deactivate(); }
+            ResetButtonColor();
         } // End Deactivate
         public void IsCalibrated (bool success) {
             this.Update(() => this.adcButton.BackColor = 
@@ -80,45 +105,72 @@ namespace Nevis14 {
         public bool isActive = false;
         public Mdac[] mdacs;
         private Button[] _dacs;
+        private Button _oFlagButton;
+        private Button _serializerButton;
 
         private uint _id;
         public uint dac1 {
             get {
-                if (isActive) return _dac1;
-                else return 0;
+                if (isActive) return (uint)((_dacs[0].BackColor == Global.OnColor) ? 1 : 0);
+                else return _dac1;
             }
             set {
                 if (isActive) {
-                    this._dac1 = value;
                     _dacs[0].Update(() => _dacs[0].BackColor = (value > 0) ? Global.OnColor : Global.OffColor);
                 }
+                this._dac1 = value;
             }
         }
         public uint dac2 {
             get {
-                if (isActive) return _dac2;
-                else return 0;
+                if (isActive) return (uint)((_dacs[1].BackColor == Global.OnColor) ? 1 : 0);
+                else return _dac2;
             }
             set {
                 if (isActive) {
-                    this._dac2 = value;
                     _dacs[1].Update(() => _dacs[1].BackColor = (value > 0) ? Global.OnColor : Global.OffColor);
                 }
+                this._dac2 = value;
+            }
+        }
+        public uint oFlag {
+            get {
+                if (isActive) return (uint)((_oFlagButton.BackColor == Global.OnColor) ? 1 : 0);
+                else return _oFlag;
+            }
+            set {
+                if (isActive) {
+                    _oFlagButton.Update(() => _oFlagButton.BackColor = (value > 0) ? Global.OnColor : Global.OffColor);
+                }
+                this._oFlag = value;
+            }
+        }
+        public uint serializer {
+            get {
+                if (isActive) return (uint)((_serializerButton.BackColor == Global.OnColor) ? 1 : 0);
+                else return _serializer;
+            }
+            set {
+                if (isActive) {
+                    _serializerButton.Update(() => _serializerButton.BackColor = (value > 0) ? Global.OnColor : Global.OffColor);
+                }
+                this._serializer = value;
             }
         }
         public uint cFlag = 0;
-        public uint oFlag = 0;
         public uint sarInput = 0;
-        public uint serializer = 0;
         public uint dynamicRange = 0;
 
-        private uint _dac1, _dac2;
+        private uint _dac1, _dac2, _oFlag, _serializer;
         public class Mdac {
             public Mdac (uint id) {
                 _mdac = null;
                 _id = id;
                 correction0 = (uint) 1 << (11 - (int) _id); // = 2^(11-_id)
                 correction1 = (uint) 1 << (12 - (int) _id);
+                cal1 = 0;
+                cal2 = 0;
+                disable = 1;
             }
             public bool isActive; // Should always mirror the isActive property of the parent AdcControl
             private MdacControl _mdac;
@@ -127,9 +179,6 @@ namespace Nevis14 {
                 this._mdac = mdac;
                 if (!this._mdac.CompareId(_id)) MessageBox.Show("mdac IDs don't match");
                 isActive = true;
-                cal1 = 0;
-                cal2 = 0;
-                disable = 1;
             }
 
             public void Deactivate () {
@@ -191,6 +240,7 @@ namespace Nevis14 {
             dac1 = dac1;
             dac2 = dac2;
             oFlag = oFlag;
+            serializer = serializer;
             for (int i = 0; i < 4; i++) {
                 mdacs[i].MatchMdacToGui();
             }
@@ -199,7 +249,8 @@ namespace Nevis14 {
             // Match gui values to stored state info
             dac1 = _dac1;
             dac2 = _dac2;
-            oFlag = oFlag;
+            oFlag = _oFlag;
+            serializer = _serializer;
             for (int i = 0; i < 4; i++) {
                 mdacs[i].MatchGuiToMdac();
             }
@@ -214,17 +265,6 @@ namespace Nevis14 {
                         }
                         this.oFlag = 0;
                         this.mdacs[mdacNum].disable = 0;
-                        this.mdacs[mdacNum].cal1 = 0;
-                        this.mdacs[mdacNum].cal2 = 0;
-                        /*for (int i = 0; i < 3; i++) {
-                            // disable mdacs lower than the current one
-                            if (i < mdacNum) this.mdacs[i].disable = 1;
-                            else { // reset this mdac and higher ones
-                                this.mdacs[i].cal1 = 0;
-                                this.mdacs[i].cal2 = 0;
-                                this.mdacs[i].disable = 0;
-                            }
-                        }*/
                         // stage 1 only has cal1
                         this.mdacs[mdacNum].cal1 = 1;
                         this.mdacs[mdacNum].cal2 = 0;
@@ -245,6 +285,7 @@ namespace Nevis14 {
                         this.dac1 = 0; // turn all off after stage 4 is finished
                         this.dac2 = 0;
                         this.mdacs[mdacNum].cal2 = 0;
+                        this.oFlag = 1;
                         break;
                     default:
                         throw new Exception("nothing to be done for calNum " + calNum);
@@ -351,9 +392,18 @@ namespace Nevis14 {
             cal2 = 0;
         }
 
-        private void cal1_Click (object s, EventArgs e) { this.cal1 = (uint)((this.cal1 == 0) ? 1 : 0); }
-        private void cal2_Click (object s, EventArgs e) { this.cal2 = (uint)((this.cal2 == 0) ? 1 : 0); }
-        private void label_Click (object s, EventArgs e) { this.disable = (uint)((this.disable == 0) ? 1 : 0); }
+        private void cal1_Click (object s, EventArgs e) { 
+            this.cal1 = (uint)((this.cal1 == 0) ? 1 : 0);
+            (this.Parent as ChipControl).OnValueChanged(s, e);
+        }
+        private void cal2_Click (object s, EventArgs e) { 
+            this.cal2 = (uint)((this.cal2 == 0) ? 1 : 0);
+            (this.Parent as ChipControl).OnValueChanged(s, e);
+        }
+        private void label_Click (object s, EventArgs e) { 
+            this.disable = (uint)((this.disable == 0) ? 1 : 0);
+            (this.Parent as ChipControl).OnValueChanged(s, e);
+        }
         private uint _id;
         public bool CompareId (uint otherId) { return (_id == otherId); }
         public uint cal1 {
@@ -374,7 +424,7 @@ namespace Nevis14 {
             get { return this._disable; }
             set {
                 this._disable = value;
-                this.Update(() => this.Enabled = !(value > 0), true); // if disable = 1, then Enabled = false
+                this.Update(() => this.label1.BackColor = (value > 0) ? default(Color) : Color.DimGray, true); // if disable = 1, then color = default
             }
         }
 

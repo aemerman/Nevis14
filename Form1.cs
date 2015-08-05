@@ -62,8 +62,8 @@ namespace Nevis14 {
         // byte[0] = 0xff, byte[1] = 0xfe
         private uint fifoAOperation = 0; // byte[2][0:2]
         private uint adcFilter = 0;      // byte[2][6]
-        private uint pllReset = 0;       // byte[2][7]
-        private uint fifoACounter = 0;   // byte[3] = fifoACounter[0:7], byte[4] = fifoACounter[8:12]
+        private uint pllAndTriggerReset = 0;       // byte[2][7]
+        private uint fifoACounter = 0;   // byte[3] = fifoACounter[0:7], byte[4] = fifoACounter[8:13]
         private uint startControlOperation; // byte[5][0]
         private uint pulseCommand;        // byte[5][1]
         private uint startMeasurement;    // byte[5][2]
@@ -582,17 +582,10 @@ namespace Nevis14 {
             List<string> lines = bufferA.ToDecimal();
             WriteDataToGui(lines);
 
-
             using (StreamWriter adcwrite = new StreamWriter (filePath + "adcData.txt", true)) {
-                /*StringBuilder s = new StringBuilder("", bufferA.Count * 3);
-                for (int i = 0; i < bufferA.Count; i += 8) {
-                    for (int j = 0; j < 8; j += 2) {
-                        s.Append(((bufferA[i + j] << 8) + bufferA[i + j + 1]) + " ");
-                    }
-                    s.Append(Environment.NewLine);
-                }*/
+
                 StringBuilder s = new StringBuilder (lines.Count * 22);
-                for (int i = 0; i < lines.Count; i += 8) {
+                for (int i = 0; i < lines.Count; i++) {
                     s.Append (lines[i]);
                     s.Append (Environment.NewLine);
                 }
@@ -772,10 +765,7 @@ namespace Nevis14 {
 
         private void dataButton_Click (object sender, EventArgs e) {
             RunOnBkgWorker((obj, args) => {
-                //AdcData[] adcData;
-                TakeData(); 
-                //adcData = FFT3(40, chipdata);
-                //WriteResult(adcData);
+                TakeData();
                 args.Result = true;
             });
         }
@@ -785,6 +775,16 @@ namespace Nevis14 {
                 AdcData[] adcData;
                 adcData = FFT3(40, chipdata);
                 WriteResult(adcData);
+                args.Result = true;
+            });
+        }
+        
+        private void triggerButton_Click (object sender, EventArgs e) {
+            RunOnBkgWorker((obj, args) => {
+                SendPllResetCommand();
+                while (true) {
+                    SendTriggerPulseCommand();
+                }
                 args.Result = true;
             });
         }

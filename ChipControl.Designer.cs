@@ -18,6 +18,7 @@
                 new MdacControl(3),
                 new MdacControl(4)
             };
+            this.serializerButton = new System.Windows.Forms.Button();
             this.oFlagButton = new System.Windows.Forms.Button();
             this.dacButtons = new System.Windows.Forms.Button[2] {
                 new System.Windows.Forms.Button(),
@@ -59,32 +60,47 @@
             this.mdacControls[3].Size = new System.Drawing.Size(80, 90);
             this.mdacControls[3].TabIndex = 7;
             // 
+            // serializerButton
+            // 
+            this.serializerButton.Location = new System.Drawing.Point(10, 10);
+            this.serializerButton.Name = "serializerButton";
+            this.serializerButton.Font = new System.Drawing.Font("Segue UI", 9F);
+            this.serializerButton.Size = new System.Drawing.Size(65, 25);
+            this.serializerButton.TabIndex = 8;
+            this.serializerButton.Text = "serializer";
+            this.serializerButton.UseVisualStyleBackColor = true;
+            this.serializerButton.Click += new System.EventHandler(button_Click);
+            // 
             // oFlagButton
             // 
-            this.oFlagButton.Location = new System.Drawing.Point(10, 15);
+            this.oFlagButton.Location = new System.Drawing.Point(10, 35);
             this.oFlagButton.Name = "oFlagButton";
-            this.oFlagButton.Size = new System.Drawing.Size(65, 30);
+            this.oFlagButton.Font = new System.Drawing.Font("Segue UI", 9F);
+            this.oFlagButton.Size = new System.Drawing.Size(65, 25);
             this.oFlagButton.TabIndex = 8;
             this.oFlagButton.Text = "OFlag";
             this.oFlagButton.UseVisualStyleBackColor = true;
+            this.oFlagButton.Click += new System.EventHandler(button_Click);
             // 
             // dac1Button
             // 
-            this.dacButtons[0].Location = new System.Drawing.Point(10, 55);
+            this.dacButtons[0].Location = new System.Drawing.Point(10, 65);
             this.dacButtons[0].Name = "dac1Button";
             this.dacButtons[0].Size = new System.Drawing.Size(65, 30);
             this.dacButtons[0].TabIndex = 8;
             this.dacButtons[0].Text = "DAC1";
             this.dacButtons[0].UseVisualStyleBackColor = true;
+            this.dacButtons[0].Click += new System.EventHandler(button_Click);
             // 
             // dac2Button
             // 
-            this.dacButtons[1].Location = new System.Drawing.Point(10, 90);
+            this.dacButtons[1].Location = new System.Drawing.Point(10, 95);
             this.dacButtons[1].Name = "dac2Button";
             this.dacButtons[1].Size = new System.Drawing.Size(65, 30);
             this.dacButtons[1].TabIndex = 9;
             this.dacButtons[1].Text = "DAC2";
             this.dacButtons[1].UseVisualStyleBackColor = true;
+            this.dacButtons[1].Click += new System.EventHandler(button_Click);
             // 
             // adc1Button
             // 
@@ -123,6 +139,7 @@
             this.Controls.Add(this.adcs[1]);
             this.Controls.Add(this.adcs[2]);
             this.Controls.Add(this.adcs[3]);
+            this.Controls.Add(this.serializerButton);
             this.Controls.Add(this.oFlagButton);
             this.Controls.Add(this.dacButtons[0]);
             this.Controls.Add(this.dacButtons[1]);
@@ -130,7 +147,6 @@
             this.Controls.Add(this.mdacControls[1]);
             this.Controls.Add(this.mdacControls[2]);
             this.Controls.Add(this.mdacControls[3]);
-            this.ValueChanged += new System.EventHandler(OnValueChanged);
             this.Name = "ChipControl";
             this.Size = new System.Drawing.Size(400, 135);
             this.ResumeLayout(false);
@@ -139,6 +155,7 @@
 
         #endregion
 
+        private System.Windows.Forms.Button serializerButton;
         private System.Windows.Forms.Button oFlagButton;
         private System.Windows.Forms.Button[] dacButtons;
         private MdacControl[] mdacControls;
@@ -165,6 +182,7 @@
             this.adcButton.TabIndex = 0;
             this.adcButton.Text = "ADC"+_id;
             this.adcButton.UseVisualStyleBackColor = true;
+            this.adcButton.Click += new System.EventHandler(adcButton_Click);
             // 
             // AdcControl
             // 
