@@ -24,18 +24,18 @@ namespace Nevis14 {
                 (byte)
                 (((fifoAOperation & 7) << 0) |
                  ((chipControl1.chipReset & 1) << 3) |
-                 ((0 & 1) << 4) | // so... 0 << 4
-                 ((0 & 1) << 5) | // so... 0 << 5
+                 ((0 & 1) << 4) | // reserved
+                 ((0 & 1) << 5) | // async pll reset
                  ((adcFilter & 1) << 6) |
-                 ((pllReset & 1) << 7)),
+                 ((pllAndTriggerReset & 1) << 7)),
                 (byte) (fifoACounter & 255),
-                (byte) ((fifoACounter >> 8) & 255),
+                (byte) ((fifoACounter >> 8) & 63),
                 (byte)
                 (((startControlOperation & 1) << 0) |
                 ((pulseCommand & 1) << 1) |
                 ((startMeasurement & 1) << 2) |
-                ((resetTrigger & 1) << 3) |
-                ((0 & 1) << 4) |
+                ((0 & 1) << 3) | // ack bit from last I2C operation
+                ((0 & 1) << 4) | // all I2C commands executed
                 ((chipControl1.softwareReset & 1) << 5) |
                 ((startFifoAOperation & 1) << 6) |
                 ((readStatus & 1) << 7)),
@@ -67,9 +67,9 @@ namespace Nevis14 {
             chipControl1.softwareReset = 0;
         } // End SoftwareReset
         public void SendPllResetCommand () { // byte[2]
-            pllReset = 0; SendStatus(); // 00
-            pllReset = 1; SendStatus(); // 0x80
-            pllReset = 0;
+            pllAndTriggerReset = 0; SendStatus(); // 00
+            pllAndTriggerReset = 1; SendStatus(); // 0x80
+            pllAndTriggerReset = 0;
             //GetPLLData(1);
         } // End PllReset
         public void SendReadStatusCommand () { // byte[5]
@@ -87,6 +87,11 @@ namespace Nevis14 {
             startMeasurement = 1; SendStatus();
             startMeasurement = 0;
         } // End StartMeasurement
+        public void SendTriggerPulseCommand () { // byte5
+            startMeasurement = 0; pulseCommand = 0; SendStatus(); // 00
+            startMeasurement = 1; pulseCommand = 1; SendStatus(); // 0x06
+            startMeasurement = 0; pulseCommand = 0;
+        } // End TriggerPulse
 
         public void DoFifoAOperation (uint op, List<byte> data, int length = -1) {
             if (length == -1) length = data.Count;

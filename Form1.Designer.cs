@@ -35,6 +35,10 @@ namespace Nevis14 {
             this.fftBox = new System.Windows.Forms.PictureBox();
             this.resultBox = new System.Windows.Forms.TextBox();
             this.chipControl1 = new Nevis14.ChipControl();
+            this.fftButton = new System.Windows.Forms.Button();
+            this.triggerButton = new System.Windows.Forms.Button();
+            this.button3 = new System.Windows.Forms.Button();
+            this.button4 = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.fftBox)).BeginInit();
             this.SuspendLayout();
             // 
@@ -80,7 +84,7 @@ namespace Nevis14 {
             // 
             // cancelButton
             // 
-            this.cancelButton.Location = new System.Drawing.Point(65, 115);
+            this.cancelButton.Location = new System.Drawing.Point(65, 200);
             this.cancelButton.Name = "cancelButton";
             this.cancelButton.Size = new System.Drawing.Size(70, 25);
             this.cancelButton.TabIndex = 4;
@@ -99,18 +103,18 @@ namespace Nevis14 {
             // 
             // dataBox
             // 
-            this.dataBox.Location = new System.Drawing.Point(10, 145);
+            this.dataBox.Location = new System.Drawing.Point(10, 360);
             this.dataBox.Multiline = true;
             this.dataBox.Name = "dataBox";
             this.dataBox.ReadOnly = true;
-            this.dataBox.Size = new System.Drawing.Size(280, 380);
+            this.dataBox.Size = new System.Drawing.Size(470, 380);
             this.dataBox.TabIndex = 5;
             // 
             // chipNumBox
             // 
             this.chipNumBox.Location = new System.Drawing.Point(105, 10);
             this.chipNumBox.Name = "chipNumBox";
-            this.chipNumBox.Size = new System.Drawing.Size(85, 29);
+            this.chipNumBox.Size = new System.Drawing.Size(85, 30);
             this.chipNumBox.TabIndex = 7;
             this.chipNumBox.ValidatingType = typeof(int);
             this.chipNumBox.TypeValidationCompleted += new System.Windows.Forms.TypeValidationEventHandler(this.chipNumBox_TypeValidationCompleted);
@@ -127,20 +131,20 @@ namespace Nevis14 {
             // 
             // fftBox
             // 
-            this.fftBox.Location = new System.Drawing.Point(300, 145);
+            this.fftBox.Location = new System.Drawing.Point(490, 360);
             this.fftBox.Name = "fftBox";
-            this.fftBox.Size = new System.Drawing.Size(690, 595);
+            this.fftBox.Size = new System.Drawing.Size(500, 380);
             this.fftBox.TabIndex = 9;
             this.fftBox.TabStop = false;
             // 
             // resultBox
             // 
             this.resultBox.Font = new System.Drawing.Font("Consolas", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.resultBox.Location = new System.Drawing.Point(10, 530);
+            this.resultBox.Location = new System.Drawing.Point(605, 150);
             this.resultBox.Multiline = true;
             this.resultBox.Name = "resultBox";
             this.resultBox.ReadOnly = true;
-            this.resultBox.Size = new System.Drawing.Size(280, 210);
+            this.resultBox.Size = new System.Drawing.Size(385, 205);
             this.resultBox.TabIndex = 10;
             // 
             // chipControl1
@@ -154,11 +158,53 @@ namespace Nevis14 {
             this.chipControl1.slvsControl = ((uint)(0u));
             this.chipControl1.TabIndex = 3;
             // 
+            // fftButton
+            // 
+            this.fftButton.Location = new System.Drawing.Point(100, 120);
+            this.fftButton.Name = "fftButton";
+            this.fftButton.Size = new System.Drawing.Size(85, 35);
+            this.fftButton.TabIndex = 17;
+            this.fftButton.Text = "FFT";
+            this.fftButton.UseVisualStyleBackColor = true;
+            this.fftButton.Click += new System.EventHandler(fftButton_Click);
+            // 
+            // triggerButton
+            // 
+            this.triggerButton.Location = new System.Drawing.Point(10, 120);
+            this.triggerButton.Name = "triggerButton";
+            this.triggerButton.Size = new System.Drawing.Size(85, 35);
+            this.triggerButton.TabIndex = 16;
+            this.triggerButton.Text = "Trigger";
+            this.triggerButton.UseVisualStyleBackColor = true;
+            this.triggerButton.Click += new System.EventHandler(triggerButton_Click);
+            // 
+            // button3
+            // 
+            this.button3.Location = new System.Drawing.Point(100, 160);
+            this.button3.Name = "button3";
+            this.button3.Size = new System.Drawing.Size(85, 35);
+            this.button3.TabIndex = 15;
+            this.button3.Text = "button3";
+            this.button3.UseVisualStyleBackColor = true;
+            // 
+            // button4
+            // 
+            this.button4.Location = new System.Drawing.Point(10, 160);
+            this.button4.Name = "button4";
+            this.button4.Size = new System.Drawing.Size(85, 35);
+            this.button4.TabIndex = 14;
+            this.button4.Text = "button4";
+            this.button4.UseVisualStyleBackColor = true;
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(10F, 22F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1000, 750);
+            this.Controls.Add(this.fftButton);
+            this.Controls.Add(this.triggerButton);
+            this.Controls.Add(this.button3);
+            this.Controls.Add(this.button4);
             this.Controls.Add(this.seeButton);
             this.Controls.Add(this.dataButton);
             this.Controls.Add(this.calibButton);
@@ -194,6 +240,10 @@ namespace Nevis14 {
         private System.Windows.Forms.Label chipNumLabel;
         private System.Windows.Forms.PictureBox fftBox;
         private System.Windows.Forms.TextBox resultBox;
+        private System.Windows.Forms.Button fftButton;
+        private System.Windows.Forms.Button triggerButton;
+        private System.Windows.Forms.Button button3;
+        private System.Windows.Forms.Button button4;
     }
 }
 
