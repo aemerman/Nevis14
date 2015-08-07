@@ -509,7 +509,8 @@ namespace Nevis14 {
                 + Math.Round(finalCalib[0], 3) + ", "
                 + Math.Round(finalCalib[1], 3) + ", "
                 + Math.Round(finalCalib[2], 3) + ", "
-                + Math.Round(finalCalib[3], 3) + ", ";
+                + Math.Round(finalCalib[3], 3) + ", "
+                + chipControl1.adcs[channelNum + 1].dynamicRange + ", ";
             Console.WriteLine("================Ended Calibration================");
         }   // End GetConst
 
@@ -842,7 +843,7 @@ namespace Nevis14 {
                 if (ftdi != null)
                     ftdi.Close();
                 filePath += "Nevis14_" + chipNumBox.Text.PadLeft(5, '0') + "/";
-                chipdata[0] = String.Format("* {0}, {1},{2}, ", chipNumBox.Text, DateTime.Now.Date, DateTime.Now.TimeOfDay);
+                chipdata[0] = String.Format("* {0}, {1},{2}, ", chipNumBox.Text, DateTime.Now.Date.ToString("d"), DateTime.Now.TimeOfDay);
                 // Create folder to store output files, if it doesn't already exist
                 if (!System.IO.Directory.Exists(filePath)) {
                     System.IO.Directory.CreateDirectory(filePath);
@@ -884,6 +885,8 @@ namespace Nevis14 {
             RunOnBkgWorker((obj, args) => {
                 AdcData[] adcData;
                 adcData = FFT3(40);
+                for (int channel = 1; channel <= 4; channel++)
+                    chipdata[channel] += adcData[channel - 1].Print();
                 WriteResult(adcData);
                 args.Result = true;
             });
