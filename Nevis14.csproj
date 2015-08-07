@@ -52,6 +52,8 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>bin\Debug\FTD2XX_NET.dll</HintPath>
     </Reference>
+    <Reference Include="NationalInstruments.Common, Version=13.0.40.190, Culture=neutral, PublicKeyToken=dc6ad606294fc298, processorArchitecture=MSIL" />
+    <Reference Include="NationalInstruments.VisaNS, Version=13.0.45.167, Culture=neutral, PublicKeyToken=4febd62461bf11a4, processorArchitecture=MSIL" />
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Numerics" />
@@ -90,6 +92,12 @@
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="Ftdi.cs" />
+    <Compile Include="FunctionGenerator.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="FunctionGenerator.Designer.cs">
+      <DependentUpon>FunctionGenerator.cs</DependentUpon>
+    </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <EmbeddedResource Include="ChipControl.resx">
@@ -98,6 +106,9 @@
     <EmbeddedResource Include="Form1.resx">
       <DependentUpon>Form1.cs</DependentUpon>
       <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FunctionGenerator.resx">
+      <DependentUpon>FunctionGenerator.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>

@@ -61,3 +61,6 @@ C:\Users\atlas\Desktop\Nevis14_GitHubRepository\Nevis14\obj\Debug\Nevis14.Form1.
 C:\Users\atlas\Desktop\Nevis14_GitHubRepository\Nevis14\obj\Debug\Nevis14.Properties.Resources.resources
 C:\Users\atlas\Desktop\Nevis14_GitHubRepository\Nevis14\obj\Debug\Nevis14.csproj.GenerateResource.Cache
 C:\Users\alexe_000\Documents\GitHub\Nevis14\Nevis14\obj\Debug\Nevis14.csprojResolveAssemblyReference.cache
+C:\Users\Max Beck\Documents\Physics\Chip Testing\Nevis14\bin\Debug\NationalInstruments.Common.Native.dll
+C:\Users\alexe_000\Documents\GitHub\Nevis14\Nevis14\bin\Debug\NationalInstruments.Common.Native.dll
+C:\Users\alexe_000\Documents\GitHub\Nevis14\Nevis14\obj\Debug\Nevis14.FunctionGenerator.resources

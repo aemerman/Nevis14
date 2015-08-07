@@ -37,8 +37,9 @@ namespace Nevis14 {
             this.chipControl1 = new Nevis14.ChipControl();
             this.fftButton = new System.Windows.Forms.Button();
             this.triggerButton = new System.Windows.Forms.Button();
-            this.button3 = new System.Windows.Forms.Button();
+            this.voltageTestButton = new System.Windows.Forms.Button();
             this.button4 = new System.Windows.Forms.Button();
+            this.funcGenerator = new Nevis14.FunctionGenerator();
             ((System.ComponentModel.ISupportInitialize)(this.fftBox)).BeginInit();
             this.SuspendLayout();
             // 
@@ -178,14 +179,15 @@ namespace Nevis14 {
             this.triggerButton.UseVisualStyleBackColor = true;
             this.triggerButton.Click += new System.EventHandler(this.triggerButton_Click);
             // 
-            // button3
+            // voltageTestButton
             // 
-            this.button3.Location = new System.Drawing.Point(100, 160);
-            this.button3.Name = "button3";
-            this.button3.Size = new System.Drawing.Size(85, 35);
-            this.button3.TabIndex = 15;
-            this.button3.Text = "button3";
-            this.button3.UseVisualStyleBackColor = true;
+            this.voltageTestButton.Location = new System.Drawing.Point(100, 160);
+            this.voltageTestButton.Name = "voltageTestButton";
+            this.voltageTestButton.Size = new System.Drawing.Size(85, 35);
+            this.voltageTestButton.TabIndex = 15;
+            this.voltageTestButton.Text = "Voltage Test";
+            this.voltageTestButton.UseVisualStyleBackColor = true;
+            this.voltageTestButton.Click += new System.EventHandler(this.voltageTestButton_Click);
             // 
             // button4
             // 
@@ -196,14 +198,23 @@ namespace Nevis14 {
             this.button4.Text = "button4";
             this.button4.UseVisualStyleBackColor = true;
             // 
+            // funcGenerator
+            // 
+            this.funcGenerator.Font = new System.Drawing.Font("Consolas", 9F);
+            this.funcGenerator.Location = new System.Drawing.Point(385, 230);
+            this.funcGenerator.Name = "funcGenerator";
+            this.funcGenerator.Size = new System.Drawing.Size(215, 125);
+            this.funcGenerator.TabIndex = 18;
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(10F, 22F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1000, 750);
+            this.Controls.Add(this.funcGenerator);
             this.Controls.Add(this.fftButton);
             this.Controls.Add(this.triggerButton);
-            this.Controls.Add(this.button3);
+            this.Controls.Add(this.voltageTestButton);
             this.Controls.Add(this.button4);
             this.Controls.Add(this.seeButton);
             this.Controls.Add(this.dataButton);
@@ -242,8 +253,9 @@ namespace Nevis14 {
         private System.Windows.Forms.TextBox resultBox;
         private System.Windows.Forms.Button fftButton;
         private System.Windows.Forms.Button triggerButton;
-        private System.Windows.Forms.Button button3;
+        private System.Windows.Forms.Button voltageTestButton;
         private System.Windows.Forms.Button button4;
+        private FunctionGenerator funcGenerator;
     }
 }
 

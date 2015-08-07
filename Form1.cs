@@ -8,8 +8,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Windows.Forms.DataVisualization.Charting;
 using System.IO;
 using System.Threading;
+using NationalInstruments.VisaNS;
 
 namespace Nevis14 {
     // This file contains the main functions used by the code
@@ -20,8 +22,8 @@ namespace Nevis14 {
         // must move back to the base of the directory structure
         string filePath = Application.StartupPath + "/../../OUTPUT/";
         List<BackgroundWorker> runningWorkers = new List<BackgroundWorker>();
+        //string filePath = "C:\\users/atlas/Dropbox/dataAug2/";
 
-        //TODO: add calibration constant requirements 
         const double calBound = 0.10;  // maximum % for the calibration parameters
         const double enobBound = 9.5; // minimum ENOB required for the chip to be good
         const string chipYear = "14";
@@ -51,6 +53,7 @@ namespace Nevis14 {
 
         const int seeWaitTimeInSeconds = 1;
         const int samplesForCalib = 3000;
+        const int samplesForQA = 12400;
         int samplesUsedForCalib = samplesForCalib - 20;
 
         // Variables used to keep track of the data being output
@@ -75,6 +78,7 @@ namespace Nevis14 {
         // Lists to store the data read from the chip
         List<byte> bufferA = new List<byte>();
         List<byte> bufferB = new List<byte>();
+        double[][] signals = new double[4][];
 
         // Lists to store calibration constant data
         List<double> sarForMdac = new List<double>();
@@ -82,6 +86,7 @@ namespace Nevis14 {
 
         Ftdi ftdi;
 
+        // Stopwatches for Timing Controls
         Stopwatch fullcalibtime = new Stopwatch();
         Stopwatch docaltime = new Stopwatch();
         Stopwatch sendcalibconttime = new Stopwatch();
@@ -92,10 +97,8 @@ namespace Nevis14 {
         Stopwatch takedatatime = new Stopwatch();
         Stopwatch inittime = new Stopwatch();
 
-
-
         // begin functions
-        public Form1 () { 
+        public Form1 () {
             InitializeComponent();
         } // End constructor 
 
@@ -148,7 +151,7 @@ namespace Nevis14 {
             int mdacNum = 3;
 
             while (channelNum <= 3) {
-                chipControl1.Update(() => chipControl1.Activate((uint) channelNum), true);
+                chipControl1.Update(() => chipControl1.Activate((uint)channelNum), true);
                 while (mdacNum >= 0) {
                     if (bw.CancellationPending) { e.Cancel = true; return; }
                     docaltime.Start();
@@ -165,7 +168,7 @@ namespace Nevis14 {
                 // calculate and store calibration constants
                 GetConst(channelNum);
                 // Send calibration constants to the chip
-                SendCalibControl((uint) channelNum);
+                SendCalibControl((uint)channelNum);
 
                 // Check that calibration constants match the numbers on the chip
                 Console.WriteLine("check channel " + channelNum);
@@ -492,11 +495,10 @@ namespace Nevis14 {
                 Console.WriteLine("Top:" + constUp + "   Bottom:" + constDown);
 
                 // Set the correction constants in the GUI
-                chipControl1.adcs[channelNum].mdacs[j].correction1 = (uint) constUp;
-                chipControl1.adcs[channelNum].mdacs[j].correction0 = (uint) constDown;
+                chipControl1.adcs[channelNum].mdacs[j].correction1 = (uint)constUp;
+                chipControl1.adcs[channelNum].mdacs[j].correction0 = (uint)constDown;
             }
-            using (StreamWriter corrections = File.AppendText(filePath + "corrections.txt"))
-            {
+            using (StreamWriter corrections = File.AppendText(filePath + "corrections.txt")) {
                 corrections.WriteLine(System.DateTime.Now + ", channel: " + channelNum + ", "
                 + Math.Round(finalCalib[0], 3) + ", "
                 + Math.Round(finalCalib[1], 3) + ", "
@@ -524,11 +526,11 @@ namespace Nevis14 {
         public bool CheckCalibration (int iCh, int retry = 0) {
             if (retry > 10) { return false; }
             checkcaltime.Start();
-            SendCalibControl((uint) iCh);
+            SendCalibControl((uint)iCh);
 
             // Read back calibration constants
             // order is most-to-least significant
-            List<uint> corr = ReadCalibControl((uint) iCh);
+            List<uint> corr = ReadCalibControl((uint)iCh);
             if (corr.Count != 8) return CheckCalibration(iCh, retry + 1);
 
             // Now we compare the 12-bit binary triply redundant constants the chip reads and compare them to the
@@ -560,7 +562,7 @@ namespace Nevis14 {
                         + Environment.NewLine + "MDAC[3] corr0: " + corr[5] + "\t corr1: " + corr[4]
                         + Environment.NewLine + "MDAC[2] corr0: " + corr[3] + "\t corr1: " + corr[2]
                         + Environment.NewLine + "MDAC[1] corr0: " + corr[1] + "\t corr1: " + corr[0]);
-               
+
                 // Check the dynamic range of the channel, if more than calBound% of the counts
                 // are lost then the chip is defective
                 chipControl1.adcs[iCh].dynamicRange = corr[0] + corr[2] + corr[4] + corr[6] + 255;
@@ -571,26 +573,32 @@ namespace Nevis14 {
         }   // End CheckCalibration
 
         /// <summary>
-        /// Simple method to take 6200 data points. Appends the data
+        /// Simple method to take 12400 data points. Appends the data
         /// to the file adcData.txt, and prints it to the GUI
         /// </summary>
         /// <returns></returns>
-        public bool TakeData () {
-            GetAdcData(12400);
-            if (bufferA.Count != 12400 * 8) { Console.WriteLine(bufferA.Count); return false; }
+        public bool TakeData (bool writeToFile = true) {
+            GetAdcData(samplesForQA);
+            if (bufferA.Count != samplesForQA * 8) { Console.WriteLine(bufferA.Count); return false; }
 
             List<string> lines = bufferA.ToDecimal();
             WriteDataToGui(lines);
 
-            using (StreamWriter adcwrite = new StreamWriter (filePath + "adcData.txt", true)) {
+            if (writeToFile) {
+                using (StreamWriter adcwrite = new StreamWriter(filePath + "adcData.txt", true)) {
 
-                StringBuilder s = new StringBuilder (lines.Count * 22);
-                for (int i = 0; i < lines.Count; i++) {
-                    s.Append (lines[i]);
-                    s.Append (Environment.NewLine);
+                    StringBuilder s = new StringBuilder(lines.Count * 22);
+                    for (int i = 0; i < lines.Count; i++) {
+                        s.Append(lines[i]);
+                        s.Append(Environment.NewLine);
+                    }
+                    adcwrite.Write(s);
+                    adcwrite.Close();
                 }
-                adcwrite.Write (s);
-                adcwrite.Close ();
+            }
+            for (int i = 0; i < bufferA.Count; i += 8) {
+                for (int j = 0; j < 8; j += 2)
+                    signals[j / 2][i / 8] = (bufferA[i + j] << 8) + bufferA[i + j + 1];
             }
             //System.IO.File.AppendAllText(filePath + "adcData.txt", s);
             return true;
@@ -619,7 +627,7 @@ namespace Nevis14 {
             SendPllResetCommand();
             GetAdcData(1000); // Initialize SEE data taking
             dataBox.Update(() => dataBox.Text = (bufferA.To16BitBinary()).ToSeparatedString(), true);
-            
+
             string seePath = CreateNewDirectory("SEE");
             string pllPath = CreateNewDirectory("PLL");
             int i = 0;
@@ -631,15 +639,14 @@ namespace Nevis14 {
                 List<string> seeData = bufferA.To16BitBinary();
                 dataBox.Update(() => dataBox.Text = seeData.ToSeparatedString());
                 List<string> seeErrors;
-                if ((seeErrors = CheckSeeData(seeData)).Count > 0){
-                seeWriter.BeginInvoke(filePath + seePath + "seeData_" + i.ToString().PadLeft(3,'0') + ".txt", seeErrors, null, null);
+                if ((seeErrors = CheckSeeData(seeData)).Count > 0) {
+                    seeWriter.BeginInvoke(filePath + seePath + "seeData_" + i.ToString().PadLeft(3, '0') + ".txt", seeErrors, null, null);
                 }
 
                 GetPllData(10);
                 List<string> pllData = bufferA.To16BitBinary();
                 List<string> pllErrors;
-                if ((pllErrors = CheckPllData(pllData)).Count > 0)
-                {
+                if ((pllErrors = CheckPllData(pllData)).Count > 0) {
                     pllWriter.BeginInvoke(filePath + pllPath + "pllData_" + i.ToString().PadLeft(3, '0') + ".txt", pllErrors, null, null);
                 }
                 SendPllResetCommand();
@@ -648,33 +655,27 @@ namespace Nevis14 {
             adcFilter = 0; SendStatus();
             e.Cancel = true;
         } // End SeeTest
-        private List<string> CheckSeeData(List<string> data)
-        {
+        private List<string> CheckSeeData (List<string> data) {
             List<string> errors = new List<string>();
-            foreach (string sample in data)
-            {
+            foreach (string sample in data) {
                 if (sample == "") Console.WriteLine(data.IndexOf(sample) + " is empty");
-                else if (sample != "10001110 11110000 10001110 11110000 10001110 11110000 10001110 11110000 ")
-                {
+                else if (sample != "10001110 11110000 10001110 11110000 10001110 11110000 10001110 11110000 ") {
                     errors.Add("Line " + data.IndexOf(sample) + ": " + sample);
                 }
             }
             return errors;
         }
-        private List<string> CheckPllData(List<string> data)
-        {
+        private List<string> CheckPllData (List<string> data) {
             List<string> errors = new List<string>();
-            foreach (string sample in data)
-            {
+            foreach (string sample in data) {
                 if (sample == "") Console.WriteLine(data.IndexOf(sample) + " is empty");
-                else if (sample != "00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 ")
-                {
+                else if (sample != "00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 ") {
                     errors.Add("Line " + data.IndexOf(sample) + ": " + sample);
                 }
             }
             return errors;
         }
-        private List<string> ParseSee(List<byte> data) {
+        private List<string> ParseSee (List<byte> data) {
             if ((data.Count % 8) != 0) throw new Exception("SEE data size is not a multiple of 8.");
             List<string> lines = new List<string>();
             StringBuilder s = new StringBuilder(72);
@@ -694,21 +695,72 @@ namespace Nevis14 {
             SendPllResetCommand(); // resets trigger (and pll count)
             for (int iPulse = 0; iPulse < 1000; iPulse++) { // arbitrary number, set later
                 SendTriggerPulseCommand();
-                // Take data for ~800ns to make sure we get the full calo pulse
-                GetAdcData(40);
+                GetAdcData(500);
                 List<string> lines = bufferA.ToDecimal();
                 WriteDataToGui(lines);
-                using (StreamWriter adcwrite = new StreamWriter(filePath + "triggerData.txt", true)) {
-                    StringBuilder s = new StringBuilder(lines.Count * 22);
-                    for (int iLine = 0; iLine < lines.Count; iLine++) {
-                        s.Append(lines[iLine]);
-                        s.Append(Environment.NewLine);
-                    }
-                    adcwrite.Write(s);
-                    adcwrite.Close();
-                } // end write to file
+                File.AppendAllLines(filePath + CreateNewFile("triggerData", 3), lines);
             }
         } // End TriggerTest
+
+        public void VoltageRangeTest (double ampStart, double ampStop, double ampStep) {
+            try {
+                this.funcGenerator.OutputOff();
+            } catch (System.ArgumentException) {
+                MessageBox.Show("This test is not available without a connection to the signal generator.");
+                return;
+            }
+
+            double[] fourierHisto;
+            AdcData data;
+            Chart voltagechart = new Chart();
+            Series enobdata;
+
+            ResetGui();
+            filePath += "Nevis14_" + chipNumBox.Text.PadLeft(5, '0') + "/";
+            filePath += CreateNewDirectory("Volt");
+
+            // --Chart Formatting--
+            voltagechart.Size = new Size(690, 595);
+            voltagechart.ChartAreas.Add(new ChartArea());
+            voltagechart.ChartAreas[0].AxisX.Title = "Signal Amplitude [V]";
+            voltagechart.ChartAreas[0].AxisY.Minimum = 9.5;
+            voltagechart.ChartAreas[0].AxisY.Maximum = 10.5;
+            voltagechart.ChartAreas[0].AxisY.Title = "ENOB";
+
+            enobdata = new Series {
+                Color = Color.Red,
+                IsVisibleInLegend = false,
+                IsXValueIndexed = true,
+                MarkerStyle = MarkerStyle.Square,
+                MarkerColor = Color.Red,
+                MarkerBorderWidth = 0,
+                ChartArea = chart1.ChartAreas[0].Name,
+                ChartType = SeriesChartType.Point
+            };
+            voltagechart.Series.Add(enobdata);
+            // End chart formatting
+            Stopwatch timer = new Stopwatch();
+            long inittime, readdatatime, ffttime;
+            double[] signalhisto;
+            for (double amp = ampStart; amp <= ampStop; amp += ampStep) {
+                timer.Reset();
+                timer.Start();
+                this.funcGenerator.ApplySin();
+                TakeData(false);
+                this.funcGenerator.OutputOff();
+                inittime = timer.ElapsedTicks;
+                signalhisto = ReadData()[0];
+                readdatatime = timer.ElapsedTicks - inittime;
+                fourierHisto = DoFFT(signalhisto);
+                ffttime = timer.ElapsedTicks - readdatatime - inittime;
+                data = DoQACalculations(fourierHisto, 0);
+                enobdata.Points.AddXY(amp, data.enob);
+                timer.Stop();
+                Console.WriteLine("DoFFT = " + (100 * ffttime / timer.ElapsedTicks) + "% -- ReadData = " + (100 * readdatatime / timer.ElapsedTicks) + "%");
+            }
+            voltagechart.Invalidate();
+            voltagechart.SaveImage(filePath + "ENOB_vs_amplitude.png", ChartImageFormat.Png);
+        } // End VoltageRangeTest
 
         // Parses data and it to the data box (right side of GUI)
         private void WriteDataToGui (List<string> data) {
@@ -719,11 +771,9 @@ namespace Nevis14 {
         private void WriteCommandToGui (string port, List<byte> data) {
 
             StringBuilder s = new StringBuilder("", data.Count * 3);
-            using (StreamWriter commandsout = File.AppendText(filePath + "commands.log"))
-            {
+            using (StreamWriter commandsout = File.AppendText(filePath + "commands.log")) {
                 commandsout.Write(Environment.NewLine + port + " ");
-                for (int i = 0; i < data.Count; i++)
-                {
+                for (int i = 0; i < data.Count; i++) {
                     s.Append(Global.NumberToString((uint)data[i], 16, 2) + " ");
                 }
                 commandsout.Write(s);
@@ -734,14 +784,25 @@ namespace Nevis14 {
 
         public string CreateNewDirectory (string prefix, int width = 2) {
             int dirNum = 0;
-            string path = prefix + "_" + dirNum.ToString().PadLeft(width, '0');
-            while (System.IO.Directory.Exists(filePath + path)) {
+            string dirName = prefix + "_" + dirNum.ToString().PadLeft(width, '0');
+            while (System.IO.Directory.Exists(filePath + dirName)) {
                 dirNum++;
-                path = path.Remove(path.Length - width);
-                path += dirNum.ToString().PadLeft(width, '0');
+                dirName = dirName.Remove(dirName.Length - width);
+                dirName += dirNum.ToString().PadLeft(width, '0');
             }
-            System.IO.Directory.CreateDirectory(filePath + path);
-            return path + "/";
+            System.IO.Directory.CreateDirectory(filePath + dirName);
+            return dirName + "/";
+        } // End CreateNewDirectory
+
+        public string CreateNewFile (string prefix, int width = 2) {
+            int fileNum = 0;
+            string fileName = prefix + "_" + fileNum.ToString().PadLeft(width, '0');
+            while (System.IO.Directory.Exists(filePath + fileName + ".txt")) {
+                fileNum++;
+                fileName = fileName.Remove(fileName.Length - width);
+                fileName += fileNum.ToString().PadLeft(width, '0');
+            }
+            return fileName + ".txt";
         } // End CreateNewDirectory
 
         public void RunOnBkgWorker (DoWorkEventHandler work) {
@@ -754,7 +815,7 @@ namespace Nevis14 {
         } // End RunOnBkgWorker
 
         private void BkgWorker_Completed (object sender, RunWorkerCompletedEventArgs e) {
-            runningWorkers.Remove((BackgroundWorker) sender);
+            runningWorkers.Remove((BackgroundWorker)sender);
             if (e.Error != null) {
                 Global.ShowError(e.Error.Message);
                 ResetGui();
@@ -763,20 +824,23 @@ namespace Nevis14 {
             } else {
                 DialogResult answer = Global.AskError("Result of operation is " + e.Result.ToString() + ". Continue?");
                 if (answer == DialogResult.Retry) {
-                    runningWorkers.Add((BackgroundWorker) sender);
-                    ((BackgroundWorker) sender).RunWorkerAsync();
+                    runningWorkers.Add((BackgroundWorker)sender);
+                    ((BackgroundWorker)sender).RunWorkerAsync();
                 }
                 // Treat Ignore as Continue
             }
         } // End BkgWorker_Completed
-        
+
         private void connectButton_Click (object sender, EventArgs e) {
             // The background worker will only be started if there is a valid chip number (any int)
             connectButton.Update(() => connectButton.Enabled = false);
+            if (!this.funcGenerator.isConnected) this.funcGenerator.SCPIconnect();
             if (this.chipNumBox.Text == "" || this.chipNumBox.BackColor == System.Drawing.Color.Red) {
                 MessageBox.Show("Invalid chip id. Please enter the number of the chip you are testing before running the code.");
             } else {
                 ResetGui();
+                if (ftdi != null)
+                    ftdi.Close();
                 filePath += "Nevis14_" + chipNumBox.Text.PadLeft(5, '0') + "/";
                 chipdata[0] = String.Format("* {0}, {1},{2}, ", chipNumBox.Text, DateTime.Now.Date, DateTime.Now.TimeOfDay);
                 // Create folder to store output files, if it doesn't already exist
@@ -817,14 +881,14 @@ namespace Nevis14 {
         }
 
         private void fftButton_Click (object sender, EventArgs e) {
-            RunOnBkgWorker ((obj, args) => {
+            RunOnBkgWorker((obj, args) => {
                 AdcData[] adcData;
-                adcData = FFT3(40, chipdata);
+                adcData = FFT3(40);
                 WriteResult(adcData);
                 args.Result = true;
             });
         }
-        
+
         private void triggerButton_Click (object sender, EventArgs e) {
             /*RunOnBkgWorker((obj, args) => {
                 SendPllResetCommand();
@@ -836,11 +900,18 @@ namespace Nevis14 {
             RunOnBkgWorker(TriggerTest);
         }
 
+        private void voltageTestButton_Click (object sender, EventArgs e) {
+            RunOnBkgWorker((obj, args) => {
+                VoltageRangeTest(3.0, 4.5, 0.005);
+                fftBox.Update(() => fftBox.Image = Image.FromFile(filePath + "ENOB_vs_amplitude.png"));
+            });
+        }
+
         private void cancelButton_Click (object sender, EventArgs e) {
             foreach (BackgroundWorker bw in runningWorkers) {
                 bw.CancelAsync();
             }
-            for (int channelnum = 0; channelnum < 4; channelnum++ ) {
+            for (int channelnum = 0; channelnum < 4; channelnum++) {
                 if (chipControl1.adcs[channelnum].isActive)
                     chipControl1.adcs[channelnum].Deactivate();
             }
@@ -854,58 +925,60 @@ namespace Nevis14 {
             }
         } // End chipNumBox_TypeValidationCompleted
 
-        private void WriteDataToFile () {
+        private void WriteQAToFile () {
             fftBox.Image = Image.FromFile(filePath + "fft.png");
             File.WriteAllLines(filePath + "QAparams.txt", chipdata);
             File.AppendAllLines(filePath.Remove(filePath.Length - 6) + "QAparams_" + chipNumBox.Text + ".txt", chipdata);
             File.AppendAllLines(filePath.Remove(filePath.Length - 20) + "QAparams_all.txt", chipdata);
             Console.WriteLine("QA Parameters Written to File");
 
-        } // End WriteDataToFile
+        } // End WriteQAToFile
 
         private void WriteResult (AdcData[] adcData) {
             if (adcData.Length != 4) throw new Exception("Invalid input to WriteResult.");
             bool underperf = false;
             bool defect = false;
             for (int i = 0; i < 4; i++) {
-                if (adcData[i].enob < (enobBound * 0.9) || (1 - chipControl1.adcs[i].dynamicRange / 4096.0) > calBound)  
+                if (adcData[i].enob < (enobBound * 0.9) || (1 - chipControl1.adcs[i].dynamicRange / 4096.0) > calBound)
                     defect = true;
                 else if (adcData[i].enob < enobBound)
                     underperf = true;
-                resultBox.Update(() => resultBox.Text += "Channel " + (i + 1) 
-                    + Environment.NewLine + "   ENOB = " + Math.Round(adcData[i].enob,4)
-                    + Environment.NewLine + "   Range = " + chipControl1.adcs[i].dynamicRange 
+                resultBox.Update(() => resultBox.Text += "Channel " + (i + 1)
+                    + Environment.NewLine + "   ENOB = " + Math.Round(adcData[i].enob, 4)
+                    + Environment.NewLine + "   Range = " + chipControl1.adcs[i].dynamicRange
                     + Environment.NewLine, true);
             }
             if (!underperf && !defect) {
-                resultBox.Update(() => { resultBox.BackColor = Color.Green; 
-                    resultBox.Text += "Chip fully operational"; });
-            }
-            else {
-                if (defect){
-                    resultBox.Update(() => { resultBox.BackColor = Color.Red; 
-                        resultBox.Text += "Defective Chip"; });
-                }else{
-                    resultBox.Update(() => { resultBox.BackColor = Color.Yellow;
-                        resultBox.Text += "Chip Underperforming"; });
-                    
+                resultBox.Update(() => {
+                    resultBox.BackColor = Color.Green;
+                    resultBox.Text += "Chip fully operational";
+                });
+            } else {
+                if (defect) {
+                    resultBox.Update(() => {
+                        resultBox.BackColor = Color.Red;
+                        resultBox.Text += "Defective Chip";
+                    });
+                } else {
+                    resultBox.Update(() => {
+                        resultBox.BackColor = Color.Yellow;
+                        resultBox.Text += "Chip Underperforming";
+                    });
+
                 }
             }
         } // End WriteResult
 
-        public void ResetGui()
-        {
+        public void ResetGui () {
             filePath = Application.StartupPath + "/../../OUTPUT/";
-            for (int i = 0; i < 4; i++)
-            {
+            for (int i = 0; i < 4; i++) {
+                signals[i] = new double[samplesForQA];
                 chipControl1.Update(() => chipControl1.adcs[i].ResetButtonColor());
             }
             resultBox.Update(() => { resultBox.Clear(); resultBox.ResetBackColor(); });
             commandBox.Update(() => commandBox.Clear());
             dataBox.Update(() => dataBox.Clear());
             fftBox.Update(() => fftBox.Image = null);
-            if(ftdi != null)
-                ftdi.Close();
 
             // Reset Timers
             totaltime.Reset();
@@ -917,7 +990,7 @@ namespace Nevis14 {
             docaltime.Reset();
             checkcaltime.Reset();
             inittime.Reset();
-            
+
         } // End resetGui
     } // End Form1
 }
