@@ -835,7 +835,7 @@ namespace Nevis14 {
         private void connectButton_Click (object sender, EventArgs e) {
             // The background worker will only be started if there is a valid chip number (any int)
             connectButton.Update(() => connectButton.Enabled = false);
-            if (!this.funcGenerator.isConnected) this.funcGenerator.SCPIconnect();
+            //if (!this.funcGenerator.isConnected) this.funcGenerator.SCPIconnect();
             if (this.chipNumBox.Text == "" || this.chipNumBox.BackColor == System.Drawing.Color.Red) {
                 MessageBox.Show("Invalid chip id. Please enter the number of the chip you are testing before running the code.");
             } else {
