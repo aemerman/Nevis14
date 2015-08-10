@@ -28,7 +28,10 @@ namespace Nevis14 {
             public string[] outFreq;
 
             public string Print () {
-                string s = enob + ", " + sfdr + ", " + sinad + ", " + sinadNoHarm;
+                string s = Math.Round(enob, 4) + ", "
+                    + Math.Round(sfdr, 4) + ", "
+                    + Math.Round(sinad, 4) + ", "
+                    + Math.Round(sinadNoHarm, 4);
                 for (int i = 0; i <= 4; i++) {
                     s += ", " + outFreq[i];
                 }

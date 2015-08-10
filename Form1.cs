@@ -513,7 +513,8 @@ namespace Nevis14 {
                 + Math.Round(finalCalib[0], 3) + ", "
                 + Math.Round(finalCalib[1], 3) + ", "
                 + Math.Round(finalCalib[2], 3) + ", "
-                + Math.Round(finalCalib[3], 3) + ", ";
+                + Math.Round(finalCalib[3], 3) + ", "
+                + chipControl1.adcs[channelNum].dynamicRange + ", ";
             Console.WriteLine("================Ended Calibration================");
         }   // End GetConst
 
@@ -764,7 +765,7 @@ namespace Nevis14 {
             // Normally the RunWorkerCompleted method would handle exceptions, but
             // that doesn't work in the debugger. Will the undergrads be using a
             // release version?
-            chipdata[0] = String.Format("* {0}, {1},{2}, ", chipNumBox.Text, DateTime.Now.Date, DateTime.Now.TimeOfDay);
+            chipdata[0] = String.Format("* {0}, {1} {2}, ", chipNumBox.Text, DateTime.Now.Date.ToString("d"), DateTime.Now.TimeOfDay);
             // Create folder to store output files, if it doesn't already exist
             if (!System.IO.Directory.Exists(filePath)) {
                 System.IO.Directory.CreateDirectory(filePath);
@@ -785,7 +786,10 @@ namespace Nevis14 {
                 //   Abort immediately quits program (in AskError), 
                 //   Retry continues the loop,
                 //   Ignore breaks the loop and continues the program
-                if(Global.AskError("Failed serializer test. Retry?") != DialogResult.Retry) break;
+                MessageBox.Show("Not enough data for serializer test. Please reseat the chip and try again\nIf this error keeps occurring on a particular chip, click the \"log error\" button to record a defect", "Serializer Error", MessageBoxButtons.OK);
+                cancelButton_Click(sender, e);
+                return;
+                //if(Global.AskError("Failed serializer test. Retry?") != DialogResult.Retry) break;
             }
             //SeeTest(5);
 
@@ -861,7 +865,7 @@ namespace Nevis14 {
             this.chipNumBox.BackColor = default(System.Drawing.Color);
             if (!e.IsValidInput) {
                 this.chipNumBox.BackColor = System.Drawing.Color.Red;
-                e.Cancel = true;
+                //e.Cancel = true;
             }
         } // End chipNumBox_TypeValidationCompleted
 
@@ -1017,6 +1021,13 @@ namespace Nevis14 {
         {
             VoltageRangeTest(3.0, 4.5, 0.005);
             fftBox.Update(() => fftBox.Image = Image.FromFile(filePath + "ENOB_vs_amplitude.png"));
+        }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            filePath = Application.StartupPath + "/../../OUTPUT/";
+            ErrorLog error = new ErrorLog(filePath);
+            error.Show();
         }
     } // End Form1
 }

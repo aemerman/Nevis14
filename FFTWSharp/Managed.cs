@@ -81,7 +81,7 @@ namespace FFTWSharp
             if (data.Length / 2 != this.length)
                 throw new ArgumentException("Array length mismatch!");
 
-            Marshal.Copy(data, 0, handle, this.length * 2);
+            Marshal.Copy(data, 0, handle, this.length * 2); 
         }
 
         /// <summary>

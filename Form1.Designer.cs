@@ -31,9 +31,9 @@ namespace Nevis14 {
             this.chipNumLabel = new System.Windows.Forms.Label();
             this.fftBox = new System.Windows.Forms.PictureBox();
             this.resultBox = new System.Windows.Forms.TextBox();
-            this.chipControl1 = new Nevis14.ChipControl();
-            this.voltagetestbutton = new System.Windows.Forms.Button();
             this.runButton = new System.Windows.Forms.Button();
+            this.button1 = new System.Windows.Forms.Button();
+            this.chipControl1 = new Nevis14.ChipControl();
             ((System.ComponentModel.ISupportInitialize)(this.fftBox)).BeginInit();
             this.SuspendLayout();
             // 
@@ -108,27 +108,6 @@ namespace Nevis14 {
             this.resultBox.Size = new System.Drawing.Size(280, 210);
             this.resultBox.TabIndex = 10;
             // 
-            // chipControl1
-            // 
-            this.chipControl1.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F);
-            this.chipControl1.Location = new System.Drawing.Point(200, 10);
-            this.chipControl1.Name = "chipControl1";
-            this.chipControl1.pllControl = ((uint)(16u));
-            this.chipControl1.refControl = ((uint)(0u));
-            this.chipControl1.Size = new System.Drawing.Size(400, 135);
-            this.chipControl1.slvsControl = ((uint)(0u));
-            this.chipControl1.TabIndex = 3;
-            // 
-            // voltagetestbutton
-            // 
-            this.voltagetestbutton.Location = new System.Drawing.Point(89, 114);
-            this.voltagetestbutton.Name = "voltagetestbutton";
-            this.voltagetestbutton.Size = new System.Drawing.Size(101, 24);
-            this.voltagetestbutton.TabIndex = 11;
-            this.voltagetestbutton.Text = "Voltage Test";
-            this.voltagetestbutton.UseVisualStyleBackColor = true;
-            this.voltagetestbutton.Click += new System.EventHandler(this.voltagetestbutton_Click);
-            // 
             // runButton
             // 
             this.runButton.Font = new System.Drawing.Font("Consolas", 12F, System.Drawing.FontStyle.Bold);
@@ -140,12 +119,33 @@ namespace Nevis14 {
             this.runButton.UseVisualStyleBackColor = true;
             this.runButton.Click += new System.EventHandler(this.runButton_Click);
             // 
+            // button1
+            // 
+            this.button1.Location = new System.Drawing.Point(89, 114);
+            this.button1.Name = "button1";
+            this.button1.Size = new System.Drawing.Size(116, 25);
+            this.button1.TabIndex = 12;
+            this.button1.Text = "Record Defect";
+            this.button1.UseVisualStyleBackColor = true;
+            this.button1.Click += new System.EventHandler(this.button1_Click);
+            // 
+            // chipControl1
+            // 
+            this.chipControl1.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F);
+            this.chipControl1.Location = new System.Drawing.Point(200, 10);
+            this.chipControl1.Name = "chipControl1";
+            this.chipControl1.pllControl = ((uint)(16u));
+            this.chipControl1.refControl = ((uint)(0u));
+            this.chipControl1.Size = new System.Drawing.Size(400, 135);
+            this.chipControl1.slvsControl = ((uint)(0u));
+            this.chipControl1.TabIndex = 3;
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 14F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1000, 750);
-            this.Controls.Add(this.voltagetestbutton);
+            this.Controls.Add(this.button1);
             this.Controls.Add(this.resultBox);
             this.Controls.Add(this.fftBox);
             this.Controls.Add(this.chipNumLabel);
@@ -175,8 +175,8 @@ namespace Nevis14 {
         private System.Windows.Forms.Label chipNumLabel;
         private System.Windows.Forms.PictureBox fftBox;
         private System.Windows.Forms.TextBox resultBox;
-        private System.Windows.Forms.Button voltagetestbutton;
         private System.Windows.Forms.Button runButton;
+        private System.Windows.Forms.Button button1;
     }
 }
 

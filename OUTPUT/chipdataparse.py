@@ -179,8 +179,8 @@ def chiptest_writetoxlsx(chip_dict):
     worksheet.write(7, 19, "F", gradeformats[4])
 
     worksheet.write(3, 20, ">3700")
-    worksheet.write(4, 20, "3650-3699")
-    worksheet.write(5, 20, "3600-3649")
+    worksheet.write(4, 20, "3600-3699")
+    #worksheet.write(5, 20, "3600-3649")
     worksheet.write(6, 20, "3500-3599")
     worksheet.write(7, 20, "<3600")
     
@@ -219,8 +219,8 @@ def chiptest_writetoxlsx(chip_dict):
                 worksheet.write(chiprow + 2, 0, "Calibration Failed", defectiveformat)
             elif dynamicrange <  3600:
                 channelgrade = 3
-            elif dynamicrange < 3650:
-                channelgrade = 2
+            #elif dynamicrange < 3650:
+            #    channelgrade = 2
             elif dynamicrange < 3700:
                 channelgrade = 1
 
@@ -252,7 +252,7 @@ def chiptest_writetoxlsx(chip_dict):
         chipsbygrade[chipgrade].append(chipid)
 
     
-    chipdefects = open("chips.txt")
+    chipdefects = open("defects.txt")
     
     for line in chipdefects.readlines():
         linesplit = line.split(' - ')
@@ -262,13 +262,10 @@ def chiptest_writetoxlsx(chip_dict):
                 chipsbygrade[4].append(chipid)
             row = 6 + (chipid - firstchip)*5
             worksheet.write(row, 0, chipid, defectiveformat)
-            if "erialize" in linesplit[1]:
-                worksheet.write(row + 1, 0, "Fail to Serialize", defectiveformat)
-                worksheet.write(row + 1, 1, "Power Draw:")
-                worksheet.write(row + 2, 0, linesplit[2], defectiveformat)
-                worksheet.write(row + 2, 1, linesplit[3])
-            else:
-                worksheet.write(row + 1, 0, linesplit[1], defectiveformat)
+            worksheet.write(row + 1, 0, linesplit[1], defectiveformat)
+            worksheet.write(row + 1, 1, "Power Draw:")
+            worksheet.write(row + 2, 0, linesplit[3], defectiveformat)
+            worksheet.write(row + 2, 1, linesplit[2])
     
     workbook.close()
     
