@@ -2,8 +2,9 @@ void makehistos()
 {
 	//static bool loaded = false;
 	//if(loaded) gROOT->ProcessLine(".U AtlasStyle.C");
-	gROOT->LoadMacro("AtlasStyle.C");  
+	gROOT->SetStyle("ATLAS");
 	SetAtlasStyle();
+	gStyle->SetOptStat(1);
 	
 	TH1I *rangehisto;
 	TH1D *enobhisto;

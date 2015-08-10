@@ -7,12 +7,15 @@ Created on Fri Apr 17 10:45:57 2015
 
 
 import xlsxwriter
-import pprint
 
 def chiptest_consolidate(qafile = open('QAparams_all.txt','r')):
     
     chipdata_dict = {}
     channel = 0
+    bestenob = 0
+    bestenobchip = -1
+    bestenobchannel = -1
+    
     for qaline in qafile.readlines():
         try:
             if qaline[0] == '*':
@@ -37,13 +40,18 @@ def chiptest_consolidate(qafile = open('QAparams_all.txt','r')):
                 for i in range(1,5):
                     calib.append(linesplit[i])
                 drange = int(linesplit[5])
-                enob =  float(linesplit[6])
-                sfdr =  float(linesplit[7])
-                sinad = float(linesplit[8])
-                snr =   float(linesplit[9])
+                enob =  round(float(linesplit[6]), 4)
+                sfdr =  round(float(linesplit[7]), 4)
+                sinad = round(float(linesplit[8]), 4)
+                snr =   round(float(linesplit[9]),4)
                 freq = []
                 for k in range(0,5):
                     freq.append([float(linesplit[10+2*k]),float(linesplit[11+2*k])])
+                
+                bestenob = max(enob,bestenob)
+                if enob == bestenob:
+                    bestenobchip = chipID
+                    bestenobchannel = channel
                 
                 channeldata = chipdata_dict[chipID][run].setdefault(channel,{})
                 channeldata["Range"] = drange
@@ -56,34 +64,16 @@ def chiptest_consolidate(qafile = open('QAparams_all.txt','r')):
         except:
             print qaline
     qafile.close()
+    print str.format("Chip {0}, channel {1} has the highest ENOB ({2})", bestenobchip, bestenobchannel, bestenob)
     #pprint.pprint(chipdata_dict)
     return chipdata_dict
     
-    
-def chiptest_optimize(chip_dict):
-    #pprint.pprint(chip_dict)
-    for chipid in chip_dict:
-        enobmax = [-100 for x in range(4)]
-        maxrun = [-1 for x in range(4)]
-        for run in chip_dict[chipid]:
-            for channel in chip_dict[chipid][run]:
-                if type(channel) == int:
-                    enob = chip_dict[chipid][run][channel]['ENOB']
-                    enobmax[channel-1] = max([enob, enobmax[channel-1]])
-                    if enobmax[channel-1] == enob:
-                        maxrun[channel-1] = run
-    
-    for chipid in chip_dict:
-        print "Chip " + str(chipid)
-        for k in range(0,4):
-            print "Channel " + str(k+1) +": " + str(enobmax[k]) + " (Run " + str(maxrun[k]) + ")"
-            
-    return
     
 def chiptest_mostrecent(chip_dict):
     updateparamfile = open('QAparams_clean.txt', 'wb')
     rootfile = open('QAparams_rootformat.txt', 'wb')
     bestchips = {}
+    
     for chipid in chip_dict:
         totalenob = 0
         lastrun = max(chip_dict[chipid].keys())
@@ -92,6 +82,7 @@ def chiptest_mostrecent(chip_dict):
             channeldata = chip_dict[chipid][lastrun][channel]
             if type(channeldata) != dict:
                 continue
+            3
             
             totalenob += chip_dict[chipid][lastrun][channel]["ENOB"]
             
@@ -119,19 +110,26 @@ def chiptest_mostrecent(chip_dict):
                                       channeldata["freq"][k][1]))
             updateparamfile.write("\r\n")
         if len(bestchips.keys()) < 10:        
-            bestchips[chipid] = totalenob
+            bestchips[totalenob] = chipid
         else:
-            cutoffenob = min(bestchips.values())
+            cutoffenob = min(bestchips.keys())
             if totalenob > cutoffenob:
-                bestchips[chipid] = totalenob
-                for chip in bestchips:
-                    if bestchips[chip] == cutoffenob:
-                        del bestchips[chip]
+                bestchips[totalenob] = chipid
+                for enobkey in bestchips:
+                    if enobkey == cutoffenob:
+                        del bestchips[enobkey]
                         break
                     
     updateparamfile.close()
-    #print bestchips
- 
+    i = 1
+    print "\nBest-performing chips"
+    print "================================"
+    print "\tChip\tAvg ENOB"
+    bestenobs = bestchips.keys()
+    bestenobs.sort()
+    for enobs in bestenobs:
+        print str.format("     {0}:\t{1}\t{2}", i, bestchips[enobs], round(enobs/4,4) )
+        i+=1
     return
 
 def chiptest_writetoxlsx(chip_dict):
@@ -166,29 +164,29 @@ def chiptest_writetoxlsx(chip_dict):
     worksheet.write(3,10, "SINAD")
     worksheet.write(3,11, "SNR")
     for i in range(0,5):
-        worksheet.write(3,12+i, str.format("freq {}", i + 1))
-        worksheet.write(3,13+i, str.format("spur {}", i + 1))
+        worksheet.write(3,12+2*i, str.format("freq {}", i + 1))
+        worksheet.write(3,13+2*i, str.format("spur {}", i + 1))
     
-    worksheet.write(2, 19, "Letter Grade")
-    worksheet.write(2, 20, "Range")
-    worksheet.write(2, 21, "ENOB")
-    worksheet.write(3, 19, "A", gradeformats[0])
-    worksheet.write(4, 19, "B", gradeformats[1])
-    worksheet.write(5, 19, "C", gradeformats[2])
-    worksheet.write(6, 19, "D", gradeformats[3])
-    worksheet.write(7, 19, "F", gradeformats[4])
+    worksheet.write(2, 23, "Letter Grade")
+    worksheet.write(2, 24, "Range")
+    worksheet.write(2, 25, "ENOB")
+    worksheet.write(3, 23, "A", gradeformats[0])
+    worksheet.write(4, 23, "B", gradeformats[1])
+    worksheet.write(5, 23, "C", gradeformats[2])
+    worksheet.write(6, 23, "D", gradeformats[3])
+    worksheet.write(7, 23, "F", gradeformats[4])
 
-    worksheet.write(3, 20, ">3700")
-    worksheet.write(4, 20, "3650-3699")
-    worksheet.write(5, 20, "3600-3649")
-    worksheet.write(6, 20, "3500-3599")
-    worksheet.write(7, 20, "<3600")
+    worksheet.write(3, 24, ">3700")
+    worksheet.write(4, 24, "3600-3699")
+    worksheet.write(5, 24, "---")
+    worksheet.write(6, 24, "3500-3599")
+    worksheet.write(7, 24, "<3600")
     
-    worksheet.write(3, 21, ">9.9")
-    worksheet.write(4, 21, "9.8-9.9")
-    worksheet.write(5, 21, "9.5-9.8")
-    worksheet.write(6, 21, "9.0-9.8")
-    worksheet.write(7, 21, "<9.0")
+    worksheet.write(3, 25, ">9.9")
+    worksheet.write(4, 25, "9.8-9.9")
+    worksheet.write(5, 25, "9.5-9.8")
+    worksheet.write(6, 25, "9.0-9.8")
+    worksheet.write(7, 25, "<9.0")
 
 
 
@@ -219,8 +217,8 @@ def chiptest_writetoxlsx(chip_dict):
                 worksheet.write(chiprow + 2, 0, "Calibration Failed", defectiveformat)
             elif dynamicrange <  3600:
                 channelgrade = 3
-            elif dynamicrange < 3650:
-                channelgrade = 2
+            #elif dynamicrange < 3650:
+                #channelgrade = 2
             elif dynamicrange < 3700:
                 channelgrade = 1
 
@@ -244,8 +242,8 @@ def chiptest_writetoxlsx(chip_dict):
             worksheet.write(row,10, channeldata["SINAD"])
             worksheet.write(row,11, channeldata["SNR"])
             for j in range(0,5):
-                worksheet.write(row,12+j, channeldata["freq"][j][0])
-                worksheet.write(row,13+j, channeldata["freq"][j][1])
+                worksheet.write(row,12+2*j, channeldata["freq"][j][0])
+                worksheet.write(row,13+2*j, channeldata["freq"][j][1])
 
         worksheet.write(chiprow + 1, 0, gradeletters[chipgrade], gradeformats[chipgrade])
         worksheet.write(chiprow, 0, chipid, gradeformats[chipgrade])
@@ -281,5 +279,4 @@ if __name__ == '__main__':
     chipdict = chiptest_consolidate()
     chiptest_mostrecent(chipdict) 
     chiptest_writetoxlsx(chipdict)
-
     
