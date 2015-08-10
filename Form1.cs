@@ -920,6 +920,13 @@ namespace Nevis14 {
             }
         } // End cancelButton_Click
 
+        private void errorButton_Click(object sender, EventArgs e)
+        {
+            filePath = "/../../OUTPUT/";
+            ErrorLog error = new ErrorLog(filePath);
+            error.Show();
+        } 
+
         private void chipNumBox_TypeValidationCompleted (object sender, System.Windows.Forms.TypeValidationEventArgs e) {
             this.chipNumBox.BackColor = default(System.Drawing.Color);
             if (!e.IsValidInput) {
@@ -994,6 +1001,7 @@ namespace Nevis14 {
             checkcaltime.Reset();
             inittime.Reset();
 
-        } // End resetGui
+        }   //End resetGui
+
     } // End Form1
 }

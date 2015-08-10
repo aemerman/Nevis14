@@ -38,7 +38,7 @@ namespace Nevis14 {
             this.fftButton = new System.Windows.Forms.Button();
             this.triggerButton = new System.Windows.Forms.Button();
             this.voltageTestButton = new System.Windows.Forms.Button();
-            this.button4 = new System.Windows.Forms.Button();
+            this.errorButton = new System.Windows.Forms.Button();
             this.funcGenerator = new Nevis14.FunctionGenerator();
             ((System.ComponentModel.ISupportInitialize)(this.fftBox)).BeginInit();
             this.SuspendLayout();
@@ -115,7 +115,7 @@ namespace Nevis14 {
             // 
             this.chipNumBox.Location = new System.Drawing.Point(105, 10);
             this.chipNumBox.Name = "chipNumBox";
-            this.chipNumBox.Size = new System.Drawing.Size(85, 29);
+            this.chipNumBox.Size = new System.Drawing.Size(85, 22);
             this.chipNumBox.TabIndex = 7;
             this.chipNumBox.ValidatingType = typeof(int);
             this.chipNumBox.TypeValidationCompleted += new System.Windows.Forms.TypeValidationEventHandler(this.chipNumBox_TypeValidationCompleted);
@@ -189,14 +189,15 @@ namespace Nevis14 {
             this.voltageTestButton.UseVisualStyleBackColor = true;
             this.voltageTestButton.Click += new System.EventHandler(this.voltageTestButton_Click);
             // 
-            // button4
+            // errorButton
             // 
-            this.button4.Location = new System.Drawing.Point(10, 160);
-            this.button4.Name = "button4";
-            this.button4.Size = new System.Drawing.Size(85, 35);
-            this.button4.TabIndex = 14;
-            this.button4.Text = "button4";
-            this.button4.UseVisualStyleBackColor = true;
+            this.errorButton.Location = new System.Drawing.Point(10, 160);
+            this.errorButton.Name = "errorButton";
+            this.errorButton.Size = new System.Drawing.Size(85, 35);
+            this.errorButton.TabIndex = 14;
+            this.errorButton.Text = "Log Defect";
+            this.errorButton.UseVisualStyleBackColor = true;
+            this.errorButton.Click += new System.EventHandler(this.errorButton_Click);
             // 
             // funcGenerator
             // 
@@ -208,14 +209,14 @@ namespace Nevis14 {
             // 
             // Form1
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(10F, 22F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 14F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1000, 750);
             this.Controls.Add(this.funcGenerator);
             this.Controls.Add(this.fftButton);
             this.Controls.Add(this.triggerButton);
             this.Controls.Add(this.voltageTestButton);
-            this.Controls.Add(this.button4);
+            this.Controls.Add(this.errorButton);
             this.Controls.Add(this.seeButton);
             this.Controls.Add(this.dataButton);
             this.Controls.Add(this.calibButton);
@@ -254,7 +255,7 @@ namespace Nevis14 {
         private System.Windows.Forms.Button fftButton;
         private System.Windows.Forms.Button triggerButton;
         private System.Windows.Forms.Button voltageTestButton;
-        private System.Windows.Forms.Button button4;
+        private System.Windows.Forms.Button errorButton;
         private FunctionGenerator funcGenerator;
     }
 }

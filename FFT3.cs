@@ -44,8 +44,6 @@ namespace Nevis14 {
         {
             numchannels = channels;
             freq = infreq;
-            DateTime time;
-            DateTime start = DateTime.Now;
             chart1 = new Chart();
             chart1.Size = new System.Drawing.Size(1000, 1000);
 
@@ -305,8 +303,6 @@ namespace Nevis14 {
             // We want to skip the first 20 entries incase something weird happens.
             // We want to fill the histrogram bins from the beginning
             // so we have an offset from the loop counter.
-            string[] line;
-            string[] separators = { " " };
             for (int sampNum = 21; sampNum <= sampLength + 20; sampNum++)
             {
                 //line = file.ReadLine().Split(separators, StringSplitOptions.RemoveEmptyEntries);
