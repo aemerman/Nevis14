@@ -798,7 +798,7 @@ namespace Nevis14 {
         public string CreateNewFile (string prefix, int width = 2) {
             int fileNum = 0;
             string fileName = prefix + "_" + fileNum.ToString().PadLeft(width, '0');
-            while (System.IO.Directory.Exists(filePath + fileName + ".txt")) {
+            while (System.IO.File.Exists(filePath + fileName + ".txt")) {
                 fileNum++;
                 fileName = fileName.Remove(fileName.Length - width);
                 fileName += fileNum.ToString().PadLeft(width, '0');
