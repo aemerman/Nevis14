@@ -922,7 +922,7 @@ namespace Nevis14 {
 
         private void errorButton_Click(object sender, EventArgs e)
         {
-            filePath = "/../../OUTPUT/";
+            filePath = Application.StartupPath + "/../../OUTPUT/";
             ErrorLog error = new ErrorLog(filePath);
             error.Show();
         } 

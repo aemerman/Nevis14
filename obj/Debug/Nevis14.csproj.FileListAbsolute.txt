@@ -65,3 +65,4 @@ C:\Users\Max Beck\Documents\Physics\Chip Testing\Nevis14\bin\Debug\NationalInstr
 C:\Users\alexe_000\Documents\GitHub\Nevis14\Nevis14\bin\Debug\NationalInstruments.Common.Native.dll
 C:\Users\alexe_000\Documents\GitHub\Nevis14\Nevis14\obj\Debug\Nevis14.FunctionGenerator.resources
 C:\Users\Max Beck\Documents\Physics\Chip Testing\Nevis14\obj\Debug\Nevis14.FunctionGenerator.resources
+C:\Users\Max Beck\Documents\Physics\Chip Testing\Nevis14\obj\Debug\Nevis14.ErrorLog.resources
