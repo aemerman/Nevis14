@@ -84,13 +84,15 @@ namespace Nevis14 {
         } // End Activate
         private void adcButton_Click (object s, EventArgs e) {
             if (this.isActive) {
-                this.Deactivate(); (this.Parent as ChipControl).ResetGuiValues();
+                this.Deactivate();
+                this.ResetButtonColor();
+                (this.Parent as ChipControl).ResetGuiValues();
             } else (this.Parent as ChipControl).Activate(_id - 1);
         } // End adcButton_Click
         public void Deactivate () {
             isActive = false; _dacs = null;
             for (int i = 0; i < 4; i++) { mdacs[i].Deactivate(); }
-            ResetButtonColor();
+            //ResetButtonColor();
         } // End Deactivate
         public void IsCalibrated (bool success) {
             this.Update(() => this.adcButton.BackColor = 

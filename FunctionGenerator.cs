@@ -33,13 +33,13 @@ namespace Nevis14 {
             isConnected = false;
         }
         private void onButton_Click (object sender, EventArgs e) {
-            if (!this.isConnected) throw new ScpiException("Trying to control unconnected function generator.");
+            if (!this.isConnected) SCPIconnect();
             if (this.isOn) this.OutputOff();
             else this.OutputOn();
         }
         private void applyButton_Click (object sender, EventArgs e) {
-            if (isConnected) ApplySin();
-            else throw new ScpiException("Trying to control unconnected function generator.");
+            if (!isConnected) SCPIconnect();
+            ApplySin();
         }
         private void ValidationCompleted (object sender, System.Windows.Forms.TypeValidationEventArgs e) {
             if (e.IsValidInput) {

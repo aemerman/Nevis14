@@ -510,7 +510,7 @@ namespace Nevis14 {
                 + Math.Round(finalCalib[1], 3) + ", "
                 + Math.Round(finalCalib[2], 3) + ", "
                 + Math.Round(finalCalib[3], 3) + ", "
-                + chipControl1.adcs[channelNum + 1].dynamicRange + ", ";
+                + chipControl1.adcs[channelNum].dynamicRange + ", ";
             Console.WriteLine("================Ended Calibration================");
         }   // End GetConst
 
@@ -694,13 +694,14 @@ namespace Nevis14 {
 
         public void TriggerTest (object sender, DoWorkEventArgs e) {
             SendPllResetCommand(); // resets trigger (and pll count)
-            for (int iPulse = 0; iPulse < 1000; iPulse++) { // arbitrary number, set later
+            for (int iPulse = 0; iPulse < 1; iPulse++) {
                 SendTriggerPulseCommand();
                 GetAdcData(500);
                 List<string> lines = bufferA.ToDecimal();
-                WriteDataToGui(lines);
+                //WriteDataToGui(lines);
                 File.AppendAllLines(filePath + CreateNewFile("triggerData", 3), lines);
             }
+            e.Result = true;
         } // End TriggerTest
 
         public void VoltageRangeTest (double ampStart, double ampStop, double ampStep) {
@@ -798,7 +799,7 @@ namespace Nevis14 {
         public string CreateNewFile (string prefix, int width = 2) {
             int fileNum = 0;
             string fileName = prefix + "_" + fileNum.ToString().PadLeft(width, '0');
-            while (System.IO.Directory.Exists(filePath + fileName + ".txt")) {
+            while (System.IO.File.Exists(filePath + fileName + ".txt")) {
                 fileNum++;
                 fileName = fileName.Remove(fileName.Length - width);
                 fileName += fileNum.ToString().PadLeft(width, '0');
@@ -835,7 +836,7 @@ namespace Nevis14 {
         private void connectButton_Click (object sender, EventArgs e) {
             // The background worker will only be started if there is a valid chip number (any int)
             connectButton.Update(() => connectButton.Enabled = false);
-            if (!this.funcGenerator.isConnected) this.funcGenerator.SCPIconnect();
+            //if (!this.funcGenerator.isConnected) this.funcGenerator.SCPIconnect();
             if (this.chipNumBox.Text == "" || this.chipNumBox.BackColor == System.Drawing.Color.Red) {
                 MessageBox.Show("Invalid chip id. Please enter the number of the chip you are testing before running the code.");
             } else {
