@@ -44,10 +44,8 @@ namespace Nevis14 {
         {
             numchannels = channels;
             freq = infreq;
-            DateTime time;
-            DateTime start = DateTime.Now;
             chart1 = new Chart();
-            chart1.Size = new System.Drawing.Size(1000, 1000);
+            chart1.Size = new System.Drawing.Size(690, 595);
 
 
             //----Setting Sampling Frequency----//
@@ -91,7 +89,7 @@ namespace Nevis14 {
 
             FormatChart("FFT");
             AddDataToChart(adcData);
-            chart1.Size = new Size(690, 595);
+            chart1.Size = new Size(1000, 1000);
             chart1.SaveImage(filePath + "fft.png", ChartImageFormat.Png); // Save the FFT Charts
             return adcData;
         }
@@ -199,6 +197,7 @@ namespace Nevis14 {
                 else if (opt.Contains("sig"))
                 {
                     chart1.Series[isig].ChartType = SeriesChartType.Point;
+                    chart1.Series[isig].MarkerSize = 2;
 
                     chart1.ChartAreas[isig].AxisY.Minimum = 0;
                     chart1.ChartAreas[isig].AxisY.Maximum = 4000;

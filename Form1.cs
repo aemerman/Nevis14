@@ -513,8 +513,7 @@ namespace Nevis14 {
                 + Math.Round(finalCalib[0], 3) + ", "
                 + Math.Round(finalCalib[1], 3) + ", "
                 + Math.Round(finalCalib[2], 3) + ", "
-                + Math.Round(finalCalib[3], 3) + ", "
-                + chipControl1.adcs[channelNum].dynamicRange + ", ";
+                + Math.Round(finalCalib[3], 3) + ", ";
             Console.WriteLine("================Ended Calibration================");
         }   // End GetConst
 
@@ -571,6 +570,7 @@ namespace Nevis14 {
                 // Check the dynamic range of the channel, if more than calBound% of the counts
                 // are lost then the chip is defective
                 chipControl1.adcs[iCh].dynamicRange = corr[0] + corr[2] + corr[4] + corr[6] + 255;
+                chipdata[iCh] += chipControl1.adcs[iCh].dynamicRange + ", ";
                 Console.WriteLine("Dynamic range of chip is: " + chipControl1.adcs[iCh].dynamicRange);
                 checkcaltime.Stop();
                 return ((1 - (chipControl1.adcs[iCh].dynamicRange / 4096.0)) < calBound);
@@ -749,7 +749,7 @@ namespace Nevis14 {
                 if (chipControl1.adcs[channelnum].isActive)
                     chipControl1.adcs[channelnum].Deactivate();
             }
-            runButton.Enabled = true;
+            runButton.Update(() => runButton.Enabled = true);
         } // End cancelButton_Click
 
         private void bkgWorker_DoWork (object sender, DoWorkEventArgs e) {
@@ -870,7 +870,7 @@ namespace Nevis14 {
         } // End chipNumBox_TypeValidationCompleted
 
         private void WriteDataToFile () {
-            fftBox.Image = Image.FromFile(filePath + "fft.png");
+            signalBox.Image = Image.FromFile(filePath + "signal.png");
             File.WriteAllLines(filePath + "QAparams.txt", chipdata);
             File.AppendAllLines(filePath.Remove(filePath.Length - 6) + "QAparams_" + chipNumBox.Text + ".txt", chipdata);
             File.AppendAllLines(filePath.Remove(filePath.Length - 20) + "QAparams_all.txt", chipdata);
@@ -919,7 +919,7 @@ namespace Nevis14 {
             resultBox.Update(() => { resultBox.Clear(); resultBox.ResetBackColor(); });
             commandBox.Update(() => commandBox.Clear());
             dataBox.Update(() => dataBox.Clear());
-            fftBox.Update(() => fftBox.Image = null);
+            signalBox.Update(() => signalBox.Image = null);
 
             // Reset Timers
             totaltime.Reset();
@@ -1020,7 +1020,7 @@ namespace Nevis14 {
         private void voltagetestbutton_Click(object sender, EventArgs e)
         {
             VoltageRangeTest(3.0, 4.5, 0.005);
-            fftBox.Update(() => fftBox.Image = Image.FromFile(filePath + "ENOB_vs_amplitude.png"));
+            signalBox.Update(() => signalBox.Image = Image.FromFile(filePath + "ENOB_vs_amplitude.png"));
         }
 
         private void button1_Click(object sender, EventArgs e)

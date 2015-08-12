@@ -29,12 +29,12 @@ namespace Nevis14 {
             this.dataBox = new System.Windows.Forms.TextBox();
             this.chipNumBox = new System.Windows.Forms.MaskedTextBox();
             this.chipNumLabel = new System.Windows.Forms.Label();
-            this.fftBox = new System.Windows.Forms.PictureBox();
+            this.signalBox = new System.Windows.Forms.PictureBox();
             this.resultBox = new System.Windows.Forms.TextBox();
             this.runButton = new System.Windows.Forms.Button();
             this.button1 = new System.Windows.Forms.Button();
             this.chipControl1 = new Nevis14.ChipControl();
-            ((System.ComponentModel.ISupportInitialize)(this.fftBox)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.signalBox)).BeginInit();
             this.SuspendLayout();
             // 
             // commandBox
@@ -90,13 +90,13 @@ namespace Nevis14 {
             this.chipNumLabel.Text = "Chip No:";
             this.chipNumLabel.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             // 
-            // fftBox
+            // signalBox
             // 
-            this.fftBox.Location = new System.Drawing.Point(300, 145);
-            this.fftBox.Name = "fftBox";
-            this.fftBox.Size = new System.Drawing.Size(690, 595);
-            this.fftBox.TabIndex = 9;
-            this.fftBox.TabStop = false;
+            this.signalBox.Location = new System.Drawing.Point(300, 145);
+            this.signalBox.Name = "signalBox";
+            this.signalBox.Size = new System.Drawing.Size(690, 595);
+            this.signalBox.TabIndex = 9;
+            this.signalBox.TabStop = false;
             // 
             // resultBox
             // 
@@ -147,7 +147,7 @@ namespace Nevis14 {
             this.ClientSize = new System.Drawing.Size(1000, 750);
             this.Controls.Add(this.button1);
             this.Controls.Add(this.resultBox);
-            this.Controls.Add(this.fftBox);
+            this.Controls.Add(this.signalBox);
             this.Controls.Add(this.chipNumLabel);
             this.Controls.Add(this.chipNumBox);
             this.Controls.Add(this.dataBox);
@@ -158,7 +158,7 @@ namespace Nevis14 {
             this.Font = new System.Drawing.Font("Consolas", 9F);
             this.Name = "Form1";
             this.Text = "Nevis14 Test Interface";
-            ((System.ComponentModel.ISupportInitialize)(this.fftBox)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.signalBox)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -173,7 +173,7 @@ namespace Nevis14 {
         private System.Windows.Forms.TextBox dataBox;
         private System.Windows.Forms.MaskedTextBox chipNumBox;
         private System.Windows.Forms.Label chipNumLabel;
-        private System.Windows.Forms.PictureBox fftBox;
+        private System.Windows.Forms.PictureBox signalBox;
         private System.Windows.Forms.TextBox resultBox;
         private System.Windows.Forms.Button runButton;
         private System.Windows.Forms.Button button1;
