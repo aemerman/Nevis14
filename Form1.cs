@@ -509,8 +509,7 @@ namespace Nevis14 {
                 + Math.Round(finalCalib[0], 3) + ", "
                 + Math.Round(finalCalib[1], 3) + ", "
                 + Math.Round(finalCalib[2], 3) + ", "
-                + Math.Round(finalCalib[3], 3) + ", "
-                + chipControl1.adcs[channelNum + 1].dynamicRange + ", ";
+                + Math.Round(finalCalib[3], 3) + ", ";
             Console.WriteLine("================Ended Calibration================");
         }   // End GetConst
 
@@ -567,6 +566,7 @@ namespace Nevis14 {
                 // Check the dynamic range of the channel, if more than calBound% of the counts
                 // are lost then the chip is defective
                 chipControl1.adcs[iCh].dynamicRange = corr[0] + corr[2] + corr[4] + corr[6] + 255;
+                chipdata[iCh] += chipControl1.adcs[iCh].dynamicRange + ", ";
                 Console.WriteLine("Dynamic range of chip is: " + chipControl1.adcs[iCh].dynamicRange);
                 checkcaltime.Stop();
                 return ((1 - (chipControl1.adcs[iCh].dynamicRange / 4096.0)) < calBound);

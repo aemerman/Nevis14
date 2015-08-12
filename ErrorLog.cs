@@ -33,7 +33,7 @@ namespace Nevis14
             string s = chipnumTextBox.Text + " - "
                 + mainError + " - "
                 + powerTextBox.Text + " - "
-                + notesTextBox.Text + " - ";
+                + notesTextBox.Text;
             using (StreamWriter err = File.AppendText(filePath + "defects.txt")) err.WriteLine(s);
             MessageBox.Show("Defect recorded successfully");
             this.Close();
