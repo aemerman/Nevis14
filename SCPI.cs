@@ -4,6 +4,7 @@ using System.Text;
 using System.Net;
 using System.Net.Sockets;
 using System.IO;
+using System.Windows.Forms;
 using NationalInstruments.VisaNS;
 
 namespace Nevis14
@@ -26,69 +27,44 @@ namespace Nevis14
 
         public bool ApplySin(double freq, double amp, double offset)
         {
-            try
-            {
-                string s = "APPL:SIN " + freq + ", " + amp + ", " + offset;
-                WriteToSCPI(s);
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e.ToString());
-                return false;
-            }
-            return true;
+            return !WriteToSCPI("APPL:SIN " + freq + ", " + amp + ", " + offset).Contains("ERROR");
         }
 
         public bool ClearStatus()
         {
-            try
-            {
-                WriteToSCPI("*CLS");
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e.ToString());
-                return false;
-            }
-            return true;
-        }
-
-        public bool OutputOn()
-        {
-            try
-            {
-                WriteToSCPI("OUTP ON");
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e.ToString());
-                return false;
-            }
-            return true;
-        }
-
-        public bool OutputOff()
-        {
-            try
-            {
-                WriteToSCPI("OUTP OFF");
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e.ToString());
-                return false;
-            }
-            return true;
+            return !WriteToSCPI("*CLS").Contains("ERROR");
         }
 
         public bool Output()
         {
-            try
-            {
-                string s = WriteToSCPI("OUTP?");
-                return s.Contains("1");
-            }
-            catch { return false; }
+            string s = WriteToSCPI("OUTP?");
+            return s.Contains("1");
+        }
+
+        public bool OutputOn()
+        {
+            return !WriteToSCPI("OUTP ON").Contains("ERROR");
+        }
+
+        public bool OutputOff()
+        {
+            return !WriteToSCPI("OUTP OFF").Contains("ERROR");
+        }
+
+        public bool SetFreq(double signalfreq)
+        {
+            return !WriteToSCPI("FREQ " + signalfreq).Contains("ERROR");
+        }
+
+        public bool SetShape(string shape)
+        //  Sine = "SIN", Square = "SQU, Ramp = "RAMP", Pulse = "PULS", Noise = "NOISE"
+        {
+            return !WriteToSCPI("FUNC " + shape).Contains("ERROR");
+        }
+
+        public bool SetVolt(double voltage)
+        {
+            return !WriteToSCPI("VOLT " + voltage).Contains("ERROR");
         }
 
         public string ReadFromSCPI()
@@ -101,14 +77,22 @@ namespace Nevis14
         public string WriteToSCPI(string s)
         {
             //Byte[] data = System.Text.Encoding.ASCII.GetBytes(s);
-            scpitalker.Write(s);
-            Byte[] lf = {(Byte)'\n'};
-            scpitalker.Write(lf);
+            try
+            {
+                scpitalker.Write(s);
+                Byte[] lf = { (Byte)'\n' };
+                scpitalker.Write(lf);
 
-            if (s.IndexOf("?") >=0 )
-                return ReadFromSCPI();
+                if (s.IndexOf("?") >= 0)
+                    return ReadFromSCPI();
 
-            return "";
+                return "";
+            }
+            catch
+            {
+                MessageBox.Show("Error Writing to generator: " + s);
+                return "ERROR";
+            }
         }
     }
 }

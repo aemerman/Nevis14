@@ -972,14 +972,19 @@ namespace Nevis14 {
             ResetGui();
             filePath += "Nevis14_" + chipNumBox.Text.PadLeft(5, '0') + "/";
             filePath += CreateNewDirectory("Volt");
+            StreamWriter voltagedata = new StreamWriter(filePath + "voltage_data.txt");
+
 
             // --Chart Formatting--
             voltagechart.Size = new Size(690, 595);
             voltagechart.ChartAreas.Add(new ChartArea());
             voltagechart.ChartAreas[0].AxisX.Title = "Signal Amplitude [V]";
+            voltagechart.ChartAreas[0].AxisX.Minimum = 0;
+            voltagechart.ChartAreas[0].AxisX.Maximum = (ampStop - ampStart) / ampStep;
             voltagechart.ChartAreas[0].AxisY.Minimum = 9.5;
             voltagechart.ChartAreas[0].AxisY.Maximum = 10.5;
             voltagechart.ChartAreas[0].AxisY.Title = "ENOB";
+
 
             enobdata = new Series{
                 Color = Color.Red,
@@ -993,31 +998,28 @@ namespace Nevis14 {
             }; 
             voltagechart.Series.Add(enobdata);
             // End chart formatting
-            Stopwatch timer = new Stopwatch();
-            long inittime, readdatatime, ffttime;
             double[] signalhisto;
+
+            functiongenerator.SetShape("SIN");
+            functiongenerator.SetFreq(signalFreq);
             for (double amp = ampStart; amp <= ampStop; amp += ampStep)
             {
-                timer.Reset();
-                timer.Start();
-                functiongenerator.ApplySin(signalFreq, amp, 0);
+                functiongenerator.OutputOn();
                 TakeData(false);
                 functiongenerator.OutputOff();
-                inittime = timer.ElapsedTicks;
                 signalhisto = ReadData()[0];
-                readdatatime = timer.ElapsedTicks - inittime;
+                functiongenerator.SetVolt(amp);
                 fourierHisto = DoFFT(signalhisto);
-                ffttime = timer.ElapsedTicks - readdatatime - inittime;
                 data = DoQACalculations(fourierHisto, 0);
                 enobdata.Points.AddXY(amp, data.enob);
-                timer.Stop();
-                Console.WriteLine("DoFFT = " + (100 * ffttime / timer.ElapsedTicks) + "% -- ReadData = " + (100 * readdatatime / timer.ElapsedTicks) + "%");
+                voltagedata.WriteLine(string.Format("{0}, {1}", amp, data.enob));
             }
+            voltagedata.Close();
             voltagechart.Invalidate();
             voltagechart.SaveImage(filePath + "ENOB_vs_amplitude.png", ChartImageFormat.Png);
         }
 
-        private void voltagetestbutton_Click(object sender, EventArgs e)
+        private void button2_Click(object sender, EventArgs e)
         {
             VoltageRangeTest(3.0, 4.5, 0.005);
             signalBox.Update(() => signalBox.Image = Image.FromFile(filePath + "ENOB_vs_amplitude.png"));
@@ -1029,5 +1031,6 @@ namespace Nevis14 {
             ErrorLog error = new ErrorLog(filePath);
             error.Show();
         }
+
     } // End Form1
 }
