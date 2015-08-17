@@ -86,16 +86,6 @@ namespace Nevis14 {
 
         Ftdi ftdi;
 
-        // Stopwatches for Timing Controls
-        Stopwatch fullcalibtime = new Stopwatch();
-        Stopwatch docaltime = new Stopwatch();
-        Stopwatch sendcalibconttime = new Stopwatch();
-        Stopwatch getadccalibtime = new Stopwatch();
-        Stopwatch totaltime = new Stopwatch();
-        Stopwatch ffttime = new Stopwatch();
-        Stopwatch checkcaltime = new Stopwatch();
-        Stopwatch takedatatime = new Stopwatch();
-        Stopwatch inittime = new Stopwatch();
 
         // begin functions
         public Form1 () {
@@ -154,9 +144,7 @@ namespace Nevis14 {
                 chipControl1.Update(() => chipControl1.Activate((uint)channelNum), true);
                 while (mdacNum >= 0) {
                     if (bw.CancellationPending) { e.Cancel = true; return; }
-                    docaltime.Start();
                     if (!DoCalWork(ref chipControl1.adcs[channelNum], calNum, mdacNum)) { e.Result = false; return; }
-                    docaltime.Stop();
                     calNum++;
                     if (calNum == 4) {
                         chipControl1.Update(() => chipControl1.adcs[channelNum].SetCalInfo(calNum, mdacNum), true);
@@ -185,9 +173,10 @@ namespace Nevis14 {
             } // End loop over channels
 
             e.Result = true;
+            resultBox.Update(() => resultBox.Text += "Calibration Successful" + Environment.NewLine);
         } // End DoCalibration
 
-        /// <summary>
+        /// <summary>tak
         /// The main calibration worker. Sends signals to the ADC and reads data back
         /// Stores data for use by GetConst
         /// </summary>
@@ -205,13 +194,9 @@ namespace Nevis14 {
 
             adc.SetCalInfo(calNum, mdacNum);
 
-            sendcalibconttime.Start();
             SendCalibControl(adc.GetChannel());
-            sendcalibconttime.Stop();
 
-            getadccalibtime.Start();
             GetAdcData(samplesForCalib);
-            getadccalibtime.Stop();
             // If the buffer is not full, then retry up to two times
             if (bufferA.Count != samplesForCalib * 8) {
                 Console.WriteLine(Environment.NewLine + "Retrying MDAC: " + (mdacNum + 1) + " calnum: " + calNum
@@ -525,7 +510,6 @@ namespace Nevis14 {
         /// 
         public bool CheckCalibration (int iCh, int retry = 0) {
             if (retry > 10) { return false; }
-            checkcaltime.Start();
             SendCalibControl((uint)iCh);
 
             // Read back calibration constants
@@ -566,9 +550,8 @@ namespace Nevis14 {
                 // Check the dynamic range of the channel, if more than calBound% of the counts
                 // are lost then the chip is defective
                 chipControl1.adcs[iCh].dynamicRange = corr[0] + corr[2] + corr[4] + corr[6] + 255;
-                chipdata[iCh] += chipControl1.adcs[iCh].dynamicRange + ", ";
+                chipdata[iCh+1] += chipControl1.adcs[iCh].dynamicRange + ", ";
                 Console.WriteLine("Dynamic range of chip is: " + chipControl1.adcs[iCh].dynamicRange);
-                checkcaltime.Stop();
                 return ((1 - (chipControl1.adcs[iCh].dynamicRange / 4096.0)) < calBound);
             }
         }   // End CheckCalibration
@@ -578,12 +561,12 @@ namespace Nevis14 {
         /// to the file adcData.txt, and prints it to the GUI
         /// </summary>
         /// <returns></returns>
-        public bool TakeData (bool writeToFile = true) {
+        public bool TakeData (bool writeToFile = true, bool updatesignalchart = true) {
             GetAdcData(samplesForQA);
             if (bufferA.Count != samplesForQA * 8) { Console.WriteLine(bufferA.Count); return false; }
 
             List<string> lines = bufferA.ToDecimal();
-            WriteDataToGui(lines);
+           // WriteDataToGui(lines);
 
             if (writeToFile) {
                 using (StreamWriter adcwrite = new StreamWriter(filePath + "adcData.txt", true)) {
@@ -601,6 +584,18 @@ namespace Nevis14 {
                 for (int j = 0; j < 8; j += 2)
                     signals[j / 2][i / 8] = (bufferA[i + j] << 8) + bufferA[i + j + 1];
             }
+            double[][] signalsfixed = ReadData();
+            if (updatesignalchart)
+            {
+                chartdisplay.Update(() =>
+                {
+                    chartdisplay.signalchart.SetData(signalsfixed);
+                    chartdisplay.signalchart.Format(Convert.ToInt32(chipNumBox.Text));
+                    chartdisplay.signalchart.Save(filePath);
+                    chartdisplay.tabControl1.SelectTab("signalTab");
+                });
+            }
+            resultBox.Update(() => resultBox.Text += "Taking Data Successful" + Environment.NewLine);
             //System.IO.File.AppendAllText(filePath + "adcData.txt", s);
             return true;
         } // End TakeData
@@ -713,54 +708,36 @@ namespace Nevis14 {
 
             double[] fourierHisto;
             AdcData data;
-            Chart voltagechart = new Chart();
-            Series enobdata;
+            Dictionary<double,double>[] voltdata = new Dictionary<double, double>[1];
+            voltdata[0] = new Dictionary<double,double>();
+            //voltdata[0] = new Dictionary<double,double>();
 
             ResetGui();
             filePath += "Nevis14_" + chipNumBox.Text.PadLeft(5, '0') + "/";
             filePath += CreateNewDirectory("Volt");
-
-            // --Chart Formatting--
-            voltagechart.Size = new Size(690, 595);
-            voltagechart.ChartAreas.Add(new ChartArea());
-            voltagechart.ChartAreas[0].AxisX.Title = "Signal Amplitude [V]";
-            voltagechart.ChartAreas[0].AxisY.Minimum = 9.5;
-            voltagechart.ChartAreas[0].AxisY.Maximum = 10.5;
-            voltagechart.ChartAreas[0].AxisY.Title = "ENOB";
-
-            enobdata = new Series {
-                Color = Color.Red,
-                IsVisibleInLegend = false,
-                IsXValueIndexed = true,
-                MarkerStyle = MarkerStyle.Square,
-                MarkerColor = Color.Red,
-                MarkerBorderWidth = 0,
-                ChartArea = chart1.ChartAreas[0].Name,
-                ChartType = SeriesChartType.Point
-            };
-            voltagechart.Series.Add(enobdata);
-            // End chart formatting
-            Stopwatch timer = new Stopwatch();
-            long inittime, readdatatime, ffttime;
+            
             double[] signalhisto;
+            chartdisplay.Update(() => chartdisplay.tabControl1.SelectTab("voltageTab"));
+            int i = 0;
             for (double amp = ampStart; amp <= ampStop; amp += ampStep) {
-                timer.Reset();
-                timer.Start();
-                this.funcGenerator.ApplySin();
-                TakeData(false);
+                this.funcGenerator.ApplySin(5006510, amp, 0);
+                TakeData(false, false);
+               //Console.WriteLine(signals[0]);
                 this.funcGenerator.OutputOff();
-                inittime = timer.ElapsedTicks;
                 signalhisto = ReadData()[0];
-                readdatatime = timer.ElapsedTicks - inittime;
                 fourierHisto = DoFFT(signalhisto);
-                ffttime = timer.ElapsedTicks - readdatatime - inittime;
-                data = DoQACalculations(fourierHisto, 0);
-                enobdata.Points.AddXY(amp, data.enob);
-                timer.Stop();
-                Console.WriteLine("DoFFT = " + (100 * ffttime / timer.ElapsedTicks) + "% -- ReadData = " + (100 * readdatatime / timer.ElapsedTicks) + "%");
+                data = DoQACalculations(fourierHisto);
+                //data = FFT3(10)[0];
+                //chartdisplay.Update(() => chartdisplay.voltagechart.Series[0].Points.Add(data.enob));
+                voltdata[0][amp] = data.enob;
             }
-            voltagechart.Invalidate();
-            voltagechart.SaveImage(filePath + "ENOB_vs_amplitude.png", ChartImageFormat.Png);
+
+            chartdisplay.Update(() => {
+                chartdisplay.voltagechart.SetData(voltdata);
+                chartdisplay.voltagechart.Format(Convert.ToInt32(chipNumBox.Text));
+                chartdisplay.voltagechart.Save(filePath);
+                chartdisplay.tabControl1.SelectTab("voltageTab");
+            });
         } // End VoltageRangeTest
 
         // Parses data and it to the data box (right side of GUI)
@@ -862,6 +839,7 @@ namespace Nevis14 {
                     //   Ignore breaks the loop and continues the program
                     if (Global.AskError("Failed serializer test. Retry?") != DialogResult.Retry) break;
                 }
+                resultBox.Update(() => resultBox.Text += "Connection Successful" + Environment.NewLine);
             }
             connectButton.Update(() => connectButton.Enabled = true);
         } // End connectButton_Click
@@ -888,6 +866,7 @@ namespace Nevis14 {
                 for (int channel = 1; channel <= 4; channel++)
                     chipdata[channel] += adcData[channel - 1].Print();
                 WriteResult(adcData);
+                WriteQAToFile();
                 args.Result = true;
             });
         }
@@ -905,8 +884,8 @@ namespace Nevis14 {
 
         private void voltageTestButton_Click (object sender, EventArgs e) {
             RunOnBkgWorker((obj, args) => {
-                VoltageRangeTest(3.0, 4.5, 0.005);
-                fftBox.Update(() => fftBox.Image = Image.FromFile(filePath + "ENOB_vs_amplitude.png"));
+                VoltageRangeTest(3.0, 4.5, 0.001);
+                //fftBox.Update(() => fftBox.Image = Image.FromFile(filePath + "ENOB_vs_amplitude.png"));
             });
         }
 
@@ -936,7 +915,7 @@ namespace Nevis14 {
         } // End chipNumBox_TypeValidationCompleted
 
         private void WriteQAToFile () {
-            fftBox.Image = Image.FromFile(filePath + "fft.png");
+            //fftBox.Image = Image.FromFile(filePath + "fft.png");
             File.WriteAllLines(filePath + "QAparams.txt", chipdata);
             File.AppendAllLines(filePath.Remove(filePath.Length - 6) + "QAparams_" + chipNumBox.Text + ".txt", chipdata);
             File.AppendAllLines(filePath.Remove(filePath.Length - 20) + "QAparams_all.txt", chipdata);
@@ -948,6 +927,7 @@ namespace Nevis14 {
             if (adcData.Length != 4) throw new Exception("Invalid input to WriteResult.");
             bool underperf = false;
             bool defect = false;
+            resultBox.Update(() => resultBox.Clear());
             for (int i = 0; i < 4; i++) {
                 if (adcData[i].enob < (enobBound * 0.9) || (1 - chipControl1.adcs[i].dynamicRange / 4096.0) > calBound)
                     defect = true;
@@ -981,25 +961,24 @@ namespace Nevis14 {
 
         public void ResetGui () {
             filePath = Application.StartupPath + "/../../OUTPUT/";
+            cancelButton_Click(null, null);
             for (int i = 0; i < 4; i++) {
                 signals[i] = new double[samplesForQA];
-                chipControl1.Update(() => chipControl1.adcs[i].ResetButtonColor());
+                //chipControl1.Update(() => chipControl1.adcs[i].ResetButtonColor());  
             }
             resultBox.Update(() => { resultBox.Clear(); resultBox.ResetBackColor(); });
             commandBox.Update(() => commandBox.Clear());
             dataBox.Update(() => dataBox.Clear());
-            fftBox.Update(() => fftBox.Image = null);
-
-            // Reset Timers
-            totaltime.Reset();
-            ffttime.Reset();
-            takedatatime.Reset();
-            sendcalibconttime.Reset();
-            getadccalibtime.Reset();
-            fullcalibtime.Reset();
-            docaltime.Reset();
-            checkcaltime.Reset();
-            inittime.Reset();
+            chartdisplay.Update(() => { 
+                chartdisplay.signalchart.Reset();
+                chartdisplay.fftchart.Reset();
+                chartdisplay.voltagechart.Reset();
+            });
+            chipControl1.Update(() =>
+            {
+                for (int channel = 0; channel < 4; channel++)
+                    chipControl1.adcs[channel].ResetButtonColor();
+            });
 
         }   //End resetGui
 

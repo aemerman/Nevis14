@@ -66,3 +66,17 @@ C:\Users\alexe_000\Documents\GitHub\Nevis14\Nevis14\bin\Debug\NationalInstrument
 C:\Users\alexe_000\Documents\GitHub\Nevis14\Nevis14\obj\Debug\Nevis14.FunctionGenerator.resources
 C:\Users\Max Beck\Documents\Physics\Chip Testing\Nevis14\obj\Debug\Nevis14.FunctionGenerator.resources
 C:\Users\Max Beck\Documents\Physics\Chip Testing\Nevis14\obj\Debug\Nevis14.ErrorLog.resources
+C:\Users\Max Beck\Documents\Physics\Nevis\Nevis14 Chip Testing\bin\Debug\Nevis14.exe.config
+C:\Users\Max Beck\Documents\Physics\Nevis\Nevis14 Chip Testing\obj\Debug\Nevis14.exe
+C:\Users\Max Beck\Documents\Physics\Nevis\Nevis14 Chip Testing\obj\Debug\Nevis14.pdb
+C:\Users\Max Beck\Documents\Physics\Nevis\Nevis14 Chip Testing\bin\Debug\Nevis14.exe
+C:\Users\Max Beck\Documents\Physics\Nevis\Nevis14 Chip Testing\bin\Debug\Nevis14.pdb
+C:\Users\Max Beck\Documents\Physics\Nevis\Nevis14 Chip Testing\bin\Debug\NationalInstruments.Common.Native.dll
+C:\Users\Max Beck\Documents\Physics\Nevis\Nevis14 Chip Testing\obj\Debug\Nevis14.ChipControl.resources
+C:\Users\Max Beck\Documents\Physics\Nevis\Nevis14 Chip Testing\obj\Debug\Nevis14.ErrorLog.resources
+C:\Users\Max Beck\Documents\Physics\Nevis\Nevis14 Chip Testing\obj\Debug\Nevis14.Form1.resources
+C:\Users\Max Beck\Documents\Physics\Nevis\Nevis14 Chip Testing\obj\Debug\Nevis14.FunctionGenerator.resources
+C:\Users\Max Beck\Documents\Physics\Nevis\Nevis14 Chip Testing\obj\Debug\Nevis14.Properties.Resources.resources
+C:\Users\Max Beck\Documents\Physics\Nevis\Nevis14 Chip Testing\obj\Debug\Nevis14.csproj.GenerateResource.Cache
+C:\Users\Max Beck\Documents\Physics\Nevis\Nevis14 Chip Testing\obj\Debug\Nevis14.ChartDisplay.resources
+C:\Users\Max Beck\Documents\Physics\Nevis\Nevis14 Chip Testing\obj\Debug\Nevis14.csprojResolveAssemblyReference.cache

@@ -17,8 +17,8 @@ namespace Nevis14 {
         const string chipyear = "14";
         double sampFreq;     //Sampling Frequency
         double freq;
-        int numchannels;
-        Chart chart1;
+        int numchannels = 4;
+        //Chart chart1;
 
         public struct AdcData {
             public double enob;
@@ -26,6 +26,7 @@ namespace Nevis14 {
             public double sinad;
             public double sinadNoHarm;
             public string[] outFreq;
+            public double[] fourierdata;
 
             public string Print () {
                 string s = Math.Round(enob, 4) + ", " 
@@ -44,9 +45,10 @@ namespace Nevis14 {
         {
             numchannels = channels;
             freq = infreq;
-            chart1 = new Chart();
-            chart1.Size = new System.Drawing.Size(1000, 1000);
-
+            int chipnum = Convert.ToInt32(chipNumBox.Text);
+            double[][] signalHisto; // For populating our signal histogram
+            double[][] fourierHisto = new double[4][]; // To put the FFT in
+            double[][] chartdata = new double[4][];
 
             //----Setting Sampling Frequency----//
 
@@ -66,192 +68,70 @@ namespace Nevis14 {
                     sampFreq = 40.0; break;
             }
 
-            InitializeChart();
-
-            double[][] signalHisto = ReadData();
-
-            FormatChart("sig");
-            chart1.SaveImage(filePath + "signal.png", ChartImageFormat.Png);
+            signalHisto = ReadData();
 
             //---- Start to Take FFTs----//
             AdcData[] adcData = new AdcData[4];
             for (int i = 0; i < 4; i++) adcData[i].outFreq = new string[5] { "", "", "", "", "" };
 
-            // Reset Charts
-            InitializeChart();
-
             // Start doing FFTs for each channel
             for (int isig = 0; isig < numchannels; isig++)
             {
-                double[] fourierHisto = DoFFT(signalHisto[isig]);
-                adcData[isig] = DoQACalculations(fourierHisto, isig);
+                fourierHisto[isig] = DoFFT(signalHisto[isig]);
+                adcData[isig] = DoQACalculations(fourierHisto[isig]);
+                chartdata[isig] = adcData[isig].fourierdata;
             }   //End FFT
 
-            FormatChart("FFT");
-            AddDataToChart(adcData);
-            chart1.Size = new Size(690, 595);
-            chart1.SaveImage(filePath + "fft.png", ChartImageFormat.Png); // Save the FFT Charts
+            Legend[] qalegend = CreateLegend(adcData);
+
+            chartdisplay.Update(() =>
+            {
+                chartdisplay.fftchart.SetData(chartdata);
+                chartdisplay.fftchart.Format(chipnum);
+                chartdisplay.fftchart.AddLegends(qalegend);
+                chartdisplay.fftchart.Save(filePath);
+                chartdisplay.tabControl1.SelectTab("fftTab");
+            });
+
+
             return adcData;
         }
-
-        private void FormatChart(string opt)
-        {
-            for (int isig = 0; isig < numchannels; isig++)
-            {
-                Font axisFont = new Font(FontFamily.GenericSansSerif, 10);
-                if (opt.Contains("FFT")){
-
-                    chart1.Series[isig].ChartType = SeriesChartType.Line;
-
-                    chart1.ChartAreas[isig].BorderWidth = 2;
-                    chart1.ChartAreas[isig].BorderColor = Color.Black;
-                    chart1.ChartAreas[isig].BorderDashStyle = ChartDashStyle.Solid;
-                    chart1.ChartAreas[isig].AxisX.Title = "Freq. [MHz]";
-                    chart1.ChartAreas[isig].AxisX.TitleAlignment = StringAlignment.Far;
-                    chart1.ChartAreas[isig].AxisX.TitleFont = axisFont;
-                    chart1.ChartAreas[isig].AxisX.Minimum = 0;
-                    chart1.ChartAreas[isig].AxisX.Maximum = sampLength / 2 * 1.1;
-                    chart1.ChartAreas[isig].AxisY.Title = "20 log\x2081\x2080(|fft|/|max|) [dB]";
-                    chart1.ChartAreas[isig].AxisY.TitleAlignment = StringAlignment.Far;
-                    chart1.ChartAreas[isig].AxisY.TitleFont = axisFont;
-                    chart1.ChartAreas[isig].AxisY.Minimum = -140;
-                    chart1.ChartAreas[isig].AxisY.Maximum = 10;
-                    double gridwidth = sampLength / 10;
-                    for (int i = 0; i < 11; i++)
-                    {
-                        // Make the X-axis labels actually correspond to frequency
-                        chart1.ChartAreas[isig].AxisX.CustomLabels.Add(new CustomLabel());
-                        chart1.ChartAreas[isig].AxisX.CustomLabels[i].FromPosition = gridwidth * i;
-                        chart1.ChartAreas[isig].AxisX.CustomLabels[i].RowIndex = 0;
-                        chart1.ChartAreas[isig].AxisX.CustomLabels[i].Text = (2 * i).ToString();
-                        chart1.ChartAreas[isig].AxisX.CustomLabels[i].GridTicks = GridTickTypes.None;
-                        chart1.ChartAreas[isig].AxisX.LabelStyle.Angle = 0;
-                    }
-                    chart1.ChartAreas[isig].AxisX.MajorTickMark.Interval
-                        = chart1.ChartAreas[isig].AxisX2.MajorTickMark.Interval
-                        = sampLength * 20 / sampFreq / 10;
-                    chart1.ChartAreas[isig].AxisX.MinorTickMark.Interval
-                        = chart1.ChartAreas[isig].AxisX2.MinorTickMark.Interval
-                        = sampLength * 20 / sampFreq / 10 / 4;
-                    chart1.ChartAreas[isig].AxisX.MinorTickMark.Enabled
-                        = chart1.ChartAreas[isig].AxisX2.MinorTickMark.Enabled
-                        = true;
-                    chart1.ChartAreas[isig].AxisX.MinorTickMark.Size
-                        = chart1.ChartAreas[isig].AxisX2.MinorTickMark.Size
-                        = chart1.ChartAreas[isig].AxisX.MajorTickMark.Size / 2;
-                    chart1.ChartAreas[isig].AxisX.MajorGrid.Enabled
-                        = chart1.ChartAreas[isig].AxisX2.MajorGrid.Enabled
-                        = false;
-                    chart1.ChartAreas[isig].AxisX2.MajorTickMark.TickMarkStyle
-                        = chart1.ChartAreas[isig].AxisX2.MinorTickMark.TickMarkStyle
-                        = TickMarkStyle.InsideArea;
-                    chart1.ChartAreas[isig].AxisX2.LabelStyle.Enabled = false;
-                    chart1.ChartAreas[isig].AxisX2.Enabled = AxisEnabled.True;
-                    chart1.ChartAreas[isig].AxisY.MajorTickMark.Interval
-                        = chart1.ChartAreas[isig].AxisY.Interval
-                        = chart1.ChartAreas[isig].AxisY2.MajorTickMark.Interval
-                        = 20;
-                    chart1.ChartAreas[isig].AxisY.MinorTickMark.Interval
-                        = chart1.ChartAreas[isig].AxisY2.MinorTickMark.Interval
-                        = 5;
-                    chart1.ChartAreas[isig].AxisY.MinorTickMark.Enabled
-                        = chart1.ChartAreas[isig].AxisY2.MinorTickMark.Enabled
-                        = true;
-                    chart1.ChartAreas[isig].AxisY.MinorTickMark.Size
-                        = chart1.ChartAreas[isig].AxisY2.MinorTickMark.Size
-                        = chart1.ChartAreas[isig].AxisY.MajorTickMark.Size / 2;
-                    chart1.ChartAreas[isig].AxisY.MajorGrid.Enabled
-                        = chart1.ChartAreas[isig].AxisY2.MajorGrid.Enabled
-                        = false;
-                    chart1.ChartAreas[isig].AxisY2.MajorTickMark.TickMarkStyle
-                        = chart1.ChartAreas[isig].AxisY2.MinorTickMark.TickMarkStyle
-                        = TickMarkStyle.InsideArea;
-                    chart1.ChartAreas[isig].AxisY2.LabelStyle.Enabled = false;
-                    chart1.ChartAreas[isig].AxisY2.Enabled = AxisEnabled.True;
-
-                    // Add ID information to the chart
-                    var fftID = new Legend
-                    {
-                        BackColor = Color.Transparent,
-                        Docking = System.Windows.Forms.DataVisualization.Charting.Docking.Left,
-                        InsideChartArea = chart1.ChartAreas[isig].Name,
-                        LegendStyle = LegendStyle.Column,
-                        Name = "ID Legend " + (isig + 1)
-                    };
-
-                    for (int i = 0; i < 4; i++)
-                        fftID.CustomItems.Add(new LegendItem());
-                    fftID.CustomItems[0].Cells.Add(new LegendCell(""));
-                    fftID.CustomItems[1].Cells.Add(new LegendCell(String.Format("Nevis{0}", chipyear)));
-                    fftID.CustomItems[2].Cells.Add(new LegendCell(String.Format("Chip {0}", chipNumBox.Text)));
-                    fftID.CustomItems[3].Cells.Add(new LegendCell(String.Format("Ch. {0}", isig + 1)));
-                    Font idFont = new Font(FontFamily.GenericSansSerif, 11, FontStyle.Italic);
-                    for (int i = 1; i <= 3; i++)
-                    {
-                        fftID.CustomItems[i].Cells[0].Font = idFont;
-                        fftID.CustomItems[i].Cells[0].Alignment = ContentAlignment.MiddleLeft;
-                    }
-
-                    chart1.Legends.Add(fftID);
-                }
-                else if (opt.Contains("sig"))
-                {
-                    chart1.Series[isig].ChartType = SeriesChartType.Point;
-
-                    chart1.ChartAreas[isig].AxisY.Minimum = 0;
-                    chart1.ChartAreas[isig].AxisY.Maximum = 4000;
-                    chart1.ChartAreas[isig].AxisX.MajorGrid.Enabled = false;
-                    chart1.ChartAreas[isig].AxisY.MajorGrid.Enabled = false;
-                    chart1.ChartAreas[isig].AxisX.Title = "Samples (100 kHz, 1 mV signal)";
-                    chart1.ChartAreas[isig].AxisY.Title = "ADC Counts";
-                }
-            }
-        }
-        private void ResetChart(Chart chart1)
-        {
-            chart1.ChartAreas.Clear();
-            chart1.Series.Clear();
-            chart1.Titles.Clear();
-            chart1.Legends.Clear();
-        }
         
-        private void AddDataToChart(AdcData[] adcData)
+        private Legend[] CreateLegend(AdcData[] adcData)
         {
-                                // Add QA information to the chart area
+            Legend[] qaInfo = new Legend[4];              
+            // Add QA information to the chart area
             for (int isig = 0; isig < numchannels; isig++)
             {
-                var fftInfo = new Legend
+                qaInfo[isig] = new Legend
                 {
                     BackColor = Color.Transparent,
-                    InsideChartArea = chart1.ChartAreas[isig].Name,
                     LegendStyle = LegendStyle.Column,
-                    Name = "Info Legend " + (isig + 1)
+                    Name = "QA Legend " + (isig + 1)
                 };
                 for (int i = 0; i < 11; i++)
-                    fftInfo.CustomItems.Add(new LegendItem());
+                    qaInfo[isig].CustomItems.Add(new LegendItem());
 
-                fftInfo.CustomItems[0].Cells.Add(new LegendCell(""));
-                fftInfo.CustomItems[1].Cells.Add(new LegendCell(String.Format("SFDR: {0:F2}", adcData[isig].sfdr)));
-                fftInfo.CustomItems[2].Cells.Add(new LegendCell(String.Format("SINAD: {0:F2}", adcData[isig].sinad)));
-                fftInfo.CustomItems[3].Cells.Add(new LegendCell(String.Format("SNR: {0:F2}", adcData[isig].sinadNoHarm)));
-                fftInfo.CustomItems[4].Cells.Add(new LegendCell(String.Format("ENOB: {0:F2}", adcData[isig].enob)));
-                fftInfo.CustomItems[5].Cells.Add(new LegendCell("Spur Freq. [MHz]:"));
+                qaInfo[isig].CustomItems[0].Cells.Add(new LegendCell(""));
+                qaInfo[isig].CustomItems[1].Cells.Add(new LegendCell(String.Format("SFDR: {0:F2}", adcData[isig].sfdr)));
+                qaInfo[isig].CustomItems[2].Cells.Add(new LegendCell(String.Format("SINAD: {0:F2}", adcData[isig].sinad)));
+                qaInfo[isig].CustomItems[3].Cells.Add(new LegendCell(String.Format("SNR: {0:F2}", adcData[isig].sinadNoHarm)));
+                qaInfo[isig].CustomItems[4].Cells.Add(new LegendCell(String.Format("ENOB: {0:F2}", adcData[isig].enob)));
+                qaInfo[isig].CustomItems[5].Cells.Add(new LegendCell("Spur Freq. [MHz]:"));
                 for (int i = 6; i < 11; i++)
                 {
-                    fftInfo.CustomItems[i].Cells.Add(new LegendCell(String.Format("{0:F2}", adcData[isig].outFreq[i - 6])));
+                    qaInfo[isig].CustomItems[i].Cells.Add(new LegendCell(String.Format("{0:F2}", adcData[isig].outFreq[i - 6])));
                 }
                 Font infoFont = new Font(FontFamily.GenericSansSerif, 9, FontStyle.Italic);
                 for (int i = 0; i < 11; i++)
                 {
-                    fftInfo.CustomItems[i].Cells[0].Font = infoFont;
-                    fftInfo.CustomItems[i].Cells[0].Alignment = ContentAlignment.MiddleLeft;
+                    qaInfo[isig].CustomItems[i].Cells[0].Font = infoFont;
+                    qaInfo[isig].CustomItems[i].Cells[0].Alignment = ContentAlignment.MiddleLeft;
                 }
-
-                // Add everything to the original chart
-                chart1.Legends.Add(fftInfo);
             }
+            return qaInfo;
         }
-        private void InitializeChart()
+        /*private void InitializeChart()
         {
             ResetChart(chart1);
             chart1.Titles.Add(DateTime.Now.ToString());
@@ -279,7 +159,7 @@ namespace Nevis14 {
                 chart1.Series.Add(seriesFFT);
                 chart1.Titles.Add(atlastitle);
             }
-        }
+        }*/
 
         private double[][] ReadData()
         {
@@ -287,46 +167,24 @@ namespace Nevis14 {
             for (int isig = 0; isig < numchannels; isig++)
                 signalHisto[isig] = new double[sampLength];
 
-            /*System.IO.StreamReader file = null;
-            string adcDataFile = filePath + "adcData.txt";
-            try
-            {
-                file = new System.IO.StreamReader(adcDataFile);
-            }
-            catch
-            {
-                Global.ShowError("Couldn't open data file: " + adcDataFile);
-                return null;
-            }*/
-
             //----Fill the histogram----//
             // We want to skip the first 20 entries incase something weird happens.
             // We want to fill the histrogram bins from the beginning
             // so we have an offset from the loop counter.
             for (int sampNum = 21; sampNum <= sampLength + 20; sampNum++)
-            {
-                //line = file.ReadLine().Split(separators, StringSplitOptions.RemoveEmptyEntries);
-                //if (sampNum > 20)
-                //{
-                    for (int isig = 0; isig < numchannels; isig++)
-                    {
-                        signalHisto[isig][sampNum - 20 - 1] = signals[isig][sampNum];
-                        chart1.Series[isig].Points.AddXY(sampNum - 20 - 1, signalHisto[isig][sampNum-20-1]);
-                    }
-                //}
-            }
-            //file.Close();
+                for (int isig = 0; isig < numchannels; isig++)
+                    signalHisto[isig][sampNum - 20 - 1] = signals[isig][sampNum];
+
             return signalHisto;
         }
         
         private double[] DoFFT(double[] signalHisto)
         {
-            //Stopwatch timer = new Stopwatch();
-            //timer.Start();
-            //long inittime, ffttime, histocalctime;
+
             double[] fourierHisto = new double[sampLength/2];
 
-            fftw_complexarray fourierComplex = new fftw_complexarray(sampLength);
+            //  --- Unmanaged FFT ---
+            /*fftw_complexarray fourierComplex = new fftw_complexarray(sampLength);
             GCHandle fin = GCHandle.Alloc(signalHisto, GCHandleType.Pinned);
             IntPtr fout = fourierComplex.Handle;
 
@@ -334,18 +192,17 @@ namespace Nevis14 {
             
             
             IntPtr plan = fftw.dft_r2c(1, new int[] { sampLength }, fin.AddrOfPinnedObject(), fout, fftw_flags.Estimate);
-            fftw.execute(plan);
+            fftw.execute(plan);*/
+            //  End Unmanaged FFT
 
-
-            //ffttime = timer.ElapsedTicks - inittime;
-
-            //Managed FFT
-            /*
+            //  --- Managed FFT ---
+            
             fftw_complexarray signalComplex = new fftw_complexarray(signalHisto);   // Make input complexarray from signalHisto
             fftw_complexarray fourierComplex = new fftw_complexarray(sampLength * 2);   // Make new output complexarray
             fftw_plan mplan = fftw_plan.dft_r2c_1d(sampLength, signalComplex, fourierComplex, fftw_flags.Estimate);
             mplan.Execute();
-             */
+             
+            //  End Managed FFT
 
             double[] fourierOut = fourierComplex.GetData_double();
 
@@ -356,12 +213,10 @@ namespace Nevis14 {
                 im = fourierOut[2 * i + 1];
                 fourierHisto[i] = Math.Sqrt(re * re + im * im);
             }
-            //histocalctime = timer.ElapsedTicks - inittime - ffttime;
-            //timer.Stop();
-            //Console.WriteLine(String.Format("{0} - {1} - {2}", 100 * inittime / timer.ElapsedTicks, 100 * ffttime / timer.ElapsedTicks, 100* histocalctime / timer.ElapsedTicks));
             return fourierHisto;
         }
-        public AdcData DoQACalculations(double[] fourierHisto, int channel)
+
+        public AdcData DoQACalculations(double[] fourierHisto)
         {
             int numPoints = 0;      //Keeping track of pts in FFT
             int ithData = 0;        //For help looping through FFT
@@ -378,6 +233,7 @@ namespace Nevis14 {
 
             AdcData qadata = new AdcData();
             qadata.outFreq = new string[5] { "", "", "", "", "" };
+            qadata.fourierdata = new double[sampLength / 2];
 
 
             //----Find the Second Largest Value----// 
@@ -387,13 +243,13 @@ namespace Nevis14 {
             fourierHisto[0] = bin1;             // the second largest value, now in binMax.
 
 
-            chart1.Series[channel].Points.AddXY(0, 20 * Math.Log10(Math.Abs(fourierHisto[1]) / Math.Abs(binMax))); // Only added to make plot look nicer
+            //chart1.Series[channel].Points.AddXY(0, 20 * Math.Log10(Math.Abs(fourierHisto[1]) / Math.Abs(binMax))); // Only added to make plot look nicer
             //----Normalize all the points to the maximum----//
             for (int i = 1; i < (sampLength / 2); i++)
             {
                 binCont = Math.Abs(fourierHisto[i]) / Math.Abs(binMax); // Normalizing to the maximum
                 theData[20 * Math.Log10(binCont)] = ((i) * sampFreq / sampLength);
-                chart1.Series[channel].Points.AddXY((i) * sampFreq / sampLength, 20 * Math.Log10(binCont));
+                qadata.fourierdata[i-1] = 20 * Math.Log10(binCont);
                 if (binCont != 1.0)
                 {            // This is all points except the signal
                     numPoints++;

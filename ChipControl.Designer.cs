@@ -90,7 +90,7 @@
             this.dacButtons[0].TabIndex = 8;
             this.dacButtons[0].Text = "DAC1";
             this.dacButtons[0].UseVisualStyleBackColor = true;
-            this.dacButtons[0].Click += new System.EventHandler(button_Click);
+            //this.dacButtons[0].Click += new System.EventHandler(button_Click);
             // 
             // dac2Button
             // 
@@ -100,7 +100,7 @@
             this.dacButtons[1].TabIndex = 9;
             this.dacButtons[1].Text = "DAC2";
             this.dacButtons[1].UseVisualStyleBackColor = true;
-            this.dacButtons[1].Click += new System.EventHandler(button_Click);
+            //this.dacButtons[1].Click += new System.EventHandler(button_Click);
             // 
             // adc1Button
             // 

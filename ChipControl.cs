@@ -29,7 +29,7 @@ namespace Nevis14 {
             }
             adcs[channelNum].Activate(ref mdacControls, ref dacButtons, ref oFlagButton, ref serializerButton);
         } // End Activate
-        private void button_Click (object s, EventArgs e) {
+        public void button_Click (object s, EventArgs e) {
             // If button is on, turn off. Else turn on.
             (s as Button).BackColor = ((s as Button).BackColor == Global.OnColor) ? Global.OffColor : Global.OnColor;
             OnValueChanged(s, e);

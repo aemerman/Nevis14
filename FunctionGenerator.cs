@@ -11,8 +11,10 @@ using NationalInstruments.VisaNS;
 
 namespace Nevis14 {
     public partial class FunctionGenerator : UserControl {
+
         public FunctionGenerator () {
             InitializeComponent();
+            if (SCPIconnect()) isConnected = true;
         }
         public FunctionGenerator (string IP) {
             InitializeComponent();
@@ -24,9 +26,10 @@ namespace Nevis14 {
         private bool isOn = false;
         public bool isConnected = false;
         private MessageBasedSession scpiTalker;
-        public double signalFreq;
-        public double signalAmp;
+        public double signalFreq = 5006510;
+        public double signalAmp = 10;
         public string signalIP = "169.254.2.20"; //"192.168.1.1";
+
         public void Reset () {
             this.OutputOff();
             scpiTalker = null;
@@ -41,6 +44,7 @@ namespace Nevis14 {
             if (!this.isConnected) SCPIconnect();
             ApplySin();
         }
+
         private void ValidationCompleted (object sender, System.Windows.Forms.TypeValidationEventArgs e) {
             if (e.IsValidInput) {
                 (sender as MaskedTextBox).BackColor = default(Color);
@@ -64,6 +68,7 @@ namespace Nevis14 {
             }
             return scpiTalker != null;
         } // End SCPIconnect
+
         private string WriteToSCPI (string s) {
             try {
                 scpiTalker.Write(s);
@@ -76,6 +81,7 @@ namespace Nevis14 {
             if (s.IndexOf("?") >= 0) return ReadFromSCPI();
             else return "";
         } // End WriteToSCPI
+
         private string ReadFromSCPI () {
             string responseData;
             try {
@@ -86,14 +92,17 @@ namespace Nevis14 {
             Console.WriteLine(responseData);
             return responseData;
         } // End ReadFromSCPI
+
         public void OutputOn () {
             WriteToSCPI("OUTP ON");
+            isOn = true;
             this.onButton.Text = "On";
             this.onButton.BackColor = Global.OnColor;
         }
         public void OutputOff () {
             WriteToSCPI("OUTP OFF");
-            this.onButton.Text = "Off";
+            isOn = false;
+            this.onButton.Update(() => onButton.Text = "Off");
             this.onButton.BackColor = Global.OffColor;
         }
         public bool CheckOutput () {
@@ -101,10 +110,20 @@ namespace Nevis14 {
         }
         public void ApplySin (double freq, double amp, double offset) {
             WriteToSCPI("APPL:SIN " + freq + ", " + amp + ", " + offset);
+            isOn = true;
+            this.onButton.Text = "On";
+            this.onButton.BackColor = Global.OnColor;
         }
         public void ApplySin (){
             WriteToSCPI("APPL:SIN " + signalFreq + ", " + signalAmp + ", 0");
         }
+        public void SetFreq(double freq) {
+            WriteToSCPI("FREQ " + freq);
+        }
+        public void SetVoltage(double volt){
+            WriteToSCPI("VOLT " + volt);
+        }
+
         public void ClearStatus () {
             WriteToSCPI("*CLS");
         }
