@@ -80,3 +80,4 @@ C:\Users\Max Beck\Documents\Physics\Nevis\Nevis14 Chip Testing\obj\Debug\Nevis14
 C:\Users\Max Beck\Documents\Physics\Nevis\Nevis14 Chip Testing\obj\Debug\Nevis14.csproj.GenerateResource.Cache
 C:\Users\Max Beck\Documents\Physics\Nevis\Nevis14 Chip Testing\obj\Debug\Nevis14.ChartDisplay.resources
 C:\Users\Max Beck\Documents\Physics\Nevis\Nevis14 Chip Testing\obj\Debug\Nevis14.csprojResolveAssemblyReference.cache
+C:\Users\Max Beck\Documents\Physics\Nevis\Nevis14 Chip Testing\obj\Debug\Nevis14.VoltageDialog.resources

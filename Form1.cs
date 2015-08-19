@@ -699,26 +699,21 @@ namespace Nevis14 {
         } // End TriggerTest
 
         public void VoltageRangeTest (double ampStart, double ampStop, double ampStep) {
-            try {
-                this.funcGenerator.OutputOff();
-            } catch (System.ArgumentException) {
-                MessageBox.Show("This test is not available without a connection to the signal generator.");
-                return;
-            }
-
             double[] fourierHisto;
             AdcData data;
             Dictionary<double,double>[] voltdata = new Dictionary<double, double>[1];
             voltdata[0] = new Dictionary<double,double>();
             //voltdata[0] = new Dictionary<double,double>();
 
-            ResetGui();
             filePath += "Nevis14_" + chipNumBox.Text.PadLeft(5, '0') + "/";
             filePath += CreateNewDirectory("Volt");
             
             double[] signalhisto;
-            chartdisplay.Update(() => chartdisplay.tabControl1.SelectTab("voltageTab"));
-            int i = 0;
+            chartdisplay.Update(() =>
+            {
+                chartdisplay.tabControl1.SelectTab("voltageTab");
+                chartdisplay.voltagechart.Reset();
+            });
             for (double amp = ampStart; amp <= ampStop; amp += ampStep) {
                 this.funcGenerator.ApplySin(5006510, amp, 0);
                 TakeData(false, false);
@@ -883,10 +878,17 @@ namespace Nevis14 {
         }
 
         private void voltageTestButton_Click (object sender, EventArgs e) {
-            RunOnBkgWorker((obj, args) => {
-                VoltageRangeTest(3.0, 4.5, 0.001);
-                //fftBox.Update(() => fftBox.Image = Image.FromFile(filePath + "ENOB_vs_amplitude.png"));
-            });
+            try
+            {
+                this.funcGenerator.OutputOff();
+            }
+            catch
+            {
+                MessageBox.Show("This test is not available without a connection to the signal generator.");
+                return;
+            }
+            VoltageDialog voltdialog = new VoltageDialog(this);
+            voltdialog.Show();
         }
 
         private void cancelButton_Click (object sender, EventArgs e) {

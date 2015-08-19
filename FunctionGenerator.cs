@@ -111,7 +111,7 @@ namespace Nevis14 {
         public void ApplySin (double freq, double amp, double offset) {
             WriteToSCPI("APPL:SIN " + freq + ", " + amp + ", " + offset);
             isOn = true;
-            this.onButton.Text = "On";
+            this.onButton.Update(() => onButton.Text = "On");
             this.onButton.BackColor = Global.OnColor;
         }
         public void ApplySin (){
