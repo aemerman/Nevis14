@@ -755,13 +755,15 @@ namespace Nevis14 {
         private void bkgWorker_DoWork (object sender, DoWorkEventArgs e) {
             BackgroundWorker thisWorker = sender as BackgroundWorker;
             totaltime.Start();
+            bool fgconnected = false;
             try
             {
                 functiongenerator.OutputOff();
                 while (functiongenerator.Output()) { }      // Waits until signal output is off
+                fgconnected = true;
             }
             catch
-            {}
+            { }
             // Normally the RunWorkerCompleted method would handle exceptions, but
             // that doesn't work in the debugger. Will the undergrads be using a
             // release version?
@@ -781,29 +783,52 @@ namespace Nevis14 {
                 Global.ShowError("FTDI exception: " + exc.Message);
             }
             inittime.Stop();
-            while (!SerializerTest()) {
-                // User has 3 options: 
-                //   Abort immediately quits program (in AskError), 
-                //   Retry continues the loop,
-                //   Ignore breaks the loop and continues the program
-                MessageBox.Show("Not enough data for serializer test. Please reseat the chip and try again\nIf this error keeps occurring on a particular chip, click the \"log error\" button to record a defect", "Serializer Error", MessageBoxButtons.OK);
-                cancelButton_Click(sender, e);
-                return;
-                //if(Global.AskError("Failed serializer test. Retry?") != DialogResult.Retry) break;
+            try {
+                while (!SerializerTest())
+                {
+                    // User has 3 options: 
+                    //   Abort immediately quits program (in AskError), 
+                    //   Retry continues the loop,
+                    //   Ignore breaks the loop and continues the program
+                    ShowErrorBox("Not enough data for serializer test. Please reseat the chip and try again");
+                    e.Cancel = true;
+                    return;
+                    //if(Global.AskError("Failed serializer test. Retry?") != DialogResult.Retry) break;
+                }
+            }
+            catch (Exception ex){
+                if (ex.Message.Contains("serializer"))
+                {
+                    ShowErrorBox(ex.Message);
+                    e.Cancel = true;
+                    return;
+                }
+                else MessageBox.Show(ex.Message);
             }
             //SeeTest(5);
 
 
             fullcalibtime.Start();
-            if (!DoCalibration(thisWorker, e)) { e.Result = false; return; }
-            fullcalibtime.Stop();
-
             try
             {
+                if (!DoCalibration(thisWorker, e)) { e.Result = false; return; }
+            }
+            catch (Exception ex)
+            {
+                if (ex.Message.Contains("calibrate") || ex.Message.Contains("mdac"))
+                {
+                    ShowErrorBox("A calibration error occurred: " + ex.Message);
+                    e.Cancel = true;
+                    return;
+                }
+            }
+            fullcalibtime.Stop();
+
+            if (fgconnected){
                 functiongenerator.ApplySin(signalFreq, signalAmp, 0);
                 while (!functiongenerator.Output()) { } // Waits until signal output is on
             }
-            catch
+            else
             {
                 totaltime.Stop();
                 if (MessageBox.Show("Finished calibrating. Please turn on the waveform generator manually.",
@@ -812,13 +837,11 @@ namespace Nevis14 {
             }
 
             takedatatime.Start();
-            if (!TakeData()) { e.Result = false; Console.WriteLine("Error Taking Data"); return; }
+            if (!TakeData()) { e.Result = false; e.Cancel = true; ShowErrorBox("Error Taking Data"); return; }
             takedatatime.Stop();
-            try
-            {
+            if (fgconnected)
                 functiongenerator.OutputOff();
-            }
-            catch { }
+
 
             Console.WriteLine("Data Taken");
             ffttime.Start();
@@ -1030,6 +1053,11 @@ namespace Nevis14 {
             filePath = Application.StartupPath + "/../../OUTPUT/";
             ErrorLog error = new ErrorLog(filePath);
             error.Show();
+        }
+
+        private void ShowErrorBox(string s)
+        {
+            MessageBox.Show(s + Environment.NewLine + "If the problem persists on a particular chip, please note it using the \"Record Defect\" button.");
         }
 
     } // End Form1
