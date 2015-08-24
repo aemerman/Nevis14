@@ -73,6 +73,15 @@ namespace Nevis14 {
             FormatChart("sig");
             chart1.SaveImage(filePath + "signal.png", ChartImageFormat.Png);
 
+            /*for (int i = 3; i > 0; i--)
+            {
+                chart1.Series.Remove(chart1.Series[i]);
+                chart1.ChartAreas.Remove(chart1.ChartAreas[i]);
+                chart1.Titles.Remove(chart1.Titles[i+1]);
+            }
+            chart1.Series[0].MarkerSize = 3;
+            chart1.SaveImage(filePath + "signal_large.png", ChartImageFormat.Png);*/
+
             //---- Start to Take FFTs----//
             AdcData[] adcData = new AdcData[4];
             for (int i = 0; i < 4; i++) adcData[i].outFreq = new string[5] { "", "", "", "", "" };
