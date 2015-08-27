@@ -11,6 +11,8 @@ namespace Nevis14
 {
     class SCPI
     {
+        // For more information on the SCPI the function generator uses,
+        // see the manual at https://www.testequipmentdepot.com/keithley/pdfs/3390_man.pdf
         private MessageBasedSession scpitalker;
         public string SCPIhostName = "192.168.1.1";
         public const double ampMax = 5.0;

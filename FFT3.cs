@@ -105,6 +105,12 @@ namespace Nevis14 {
 
         private void FormatChart(string opt)
         {
+            // Stupid C# chart formatting stuff...
+            // If you want to change the x-axis on
+            // any chart, you have to use the NUMBER OF POINTS
+            // as the parameter, rather than
+            // the actual x-values, because
+            // the C# chart class is annoying
             for (int isig = 0; isig < numchannels; isig++)
             {
                 Font axisFont = new Font(FontFamily.GenericSansSerif, 10);

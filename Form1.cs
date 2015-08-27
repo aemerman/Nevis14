@@ -583,12 +583,12 @@ namespace Nevis14 {
         /// </summary>
         /// <returns></returns>
         public bool TakeData (bool writeToFile = true) {
-            GetAdcData(samplesForQA);
+            GetAdcData(samplesForQA);        // This is where the data actually gets read from the chip (as a byte[] into bufferA)
             if (bufferA.Count != samplesForQA * 8) { Console.WriteLine(bufferA.Count); return false; }
             int counts;
             WriteDataToGui(bufferA);
             if (writeToFile)
-            {
+            {       // Reads data from the buffer into a string and a .txt
                 using (StreamWriter adcwrite = new StreamWriter(filePath + "adcData.txt"))
                 {
                     StringBuilder s = new StringBuilder("", bufferA.Count * 3);
@@ -809,6 +809,9 @@ namespace Nevis14 {
 
 
             fullcalibtime.Start();
+
+            //  Calibrate the chip; if it fails,
+            //  show an error message and stop the worker
             try
             {
                 if (!DoCalibration(thisWorker, e)) { e.Result = false; return; }
@@ -824,7 +827,12 @@ namespace Nevis14 {
                 else MessageBox.Show(ex.Message);
             }
             fullcalibtime.Stop();
+            // End of Calibration
 
+
+            // Turn on the signal generator, or
+            // if remote connection isn't possible,
+            // prompt user to turn it on manually
             if (fgconnected){
                 functiongenerator.ApplySin(signalFreq, signalAmp, 0);
                 while (!functiongenerator.Output()) { } // Waits until signal output is on
@@ -836,7 +844,8 @@ namespace Nevis14 {
                     "", MessageBoxButtons.OKCancel) == DialogResult.Cancel) { e.Cancel = true; return; }
                 totaltime.Start();
             }
-
+ 
+            // Take the signal (sine wave) data
             takedatatime.Start();
             if (!TakeData()) { e.Result = false; e.Cancel = true; ShowErrorBox("Error Taking Data"); return; }
             takedatatime.Stop();
@@ -845,6 +854,9 @@ namespace Nevis14 {
 
 
             Console.WriteLine("Data Taken");
+            // Using the data we just took,
+            // calculate the FFT and QA parameters
+            // associated with each channel of the ADC
             ffttime.Start();
             AdcData[] adcData = FFT3(10, 4);
             ffttime.Stop();
@@ -854,13 +866,14 @@ namespace Nevis14 {
             {
                 for (int isig = 0; isig < 4; isig++)
                 {
-                    chipdata[isig + 1] += adcData[isig].Print();
+                    chipdata[isig + 1] += adcData[isig].Print(); // Add the QA parameters to what we'll write to the QAfile
                 }
             }
 
             WriteDataToFile();
             WriteResult(adcData);
             totaltime.Stop();
+            // -- Display runtime info --
             Console.WriteLine(String.Format("FTDI initialization took {0:F3}s  ({1:F2}%)", inittime.Elapsed.TotalSeconds, 100.0 * inittime.ElapsedMilliseconds / totaltime.ElapsedMilliseconds));
             Console.WriteLine(String.Format("Full Calibration took {0:F3}s  ({1:F2}%)", fullcalibtime.Elapsed.TotalSeconds, 100.0 * fullcalibtime.ElapsedMilliseconds / totaltime.ElapsedMilliseconds));
             Console.WriteLine(String.Format("\t'CheckCalibration' took {0:F3}s  ({1:F2}%)", checkcaltime.Elapsed.TotalSeconds, 100.0 * checkcaltime.ElapsedMilliseconds / totaltime.ElapsedMilliseconds));
@@ -871,6 +884,8 @@ namespace Nevis14 {
             Console.WriteLine(String.Format("Taking Data took {0:F3}s  ({1:F2}%)", takedatatime.Elapsed.TotalSeconds, 100.0 * takedatatime.ElapsedMilliseconds / totaltime.ElapsedMilliseconds));
             long unaccounted = totaltime.ElapsedMilliseconds - ffttime.ElapsedMilliseconds - fullcalibtime.ElapsedMilliseconds - inittime.ElapsedMilliseconds - takedatatime.ElapsedMilliseconds;
             Console.WriteLine(String.Format("{0:F3} unaccounted for ({1:F2}%)", unaccounted / 1000.0, 100.0 * unaccounted / totaltime.ElapsedMilliseconds));
+            // End of runtime info
+
             e.Result = true;
             
         } // End bkgWorker_DoWork
@@ -907,9 +922,9 @@ namespace Nevis14 {
             bool underperf = false;
             bool defect = false;
             for (int i = 0; i < 4; i++) {
-                if (adcData[i].enob < (enobBound * 0.9) || (1 - chipControl1.adcs[i].dynamicRange / 4096.0) > calBound)  
+                if (adcData[i].enob < (enobBound * 0.9))  
                     defect = true;
-                else if (adcData[i].enob < enobBound)
+                else if (adcData[i].enob < enobBound || (1 - chipControl1.adcs[i].dynamicRange / 4096.0) > calBound)
                     underperf = true;
                 resultBox.Update(() => resultBox.Text += "Channel " + (i + 1) 
                     + Environment.NewLine + "   ENOB = " + Math.Round(adcData[i].enob,4)
